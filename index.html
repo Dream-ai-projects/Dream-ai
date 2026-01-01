@@ -10,14 +10,14 @@
 
 <div id="waifu-app">
 
-    <h1>💖 Dream's Anime Waifu 💖</h1>
+    <h1>💖 Dream's Waifu 💖</h1>
 
-    <!-- Avatar & Outfit -->
+    <!-- Avatar Box -->
     <div id="avatar-box">
         <img id="avatar" src="outfit1.png" alt="Waifu Avatar">
     </div>
 
-    <!-- Outfit Switch (optional) -->
+    <!-- Outfit Switch -->
     <div id="outfit-switch">
         <button onclick="switchOutfit('casual')">Casual</button>
         <button onclick="switchOutfit('school')">School</button>
@@ -25,7 +25,7 @@
         <button onclick="switchOutfit('beach')">Beach</button>
     </div>
 
-    <!-- Chat Window -->
+    <!-- Chat Container -->
     <div id="chat-container">
         <div id="chat"></div>
     </div>
@@ -41,10 +41,10 @@
 
 <script src="script.js"></script>
 <script>
-    function switchOutfit(o){
-        currentOutfit=o;
-        document.getElementById("avatar").src=outfits[o];
-    }
+function switchOutfit(o){
+    currentOutfit=o;
+    document.getElementById("avatar").src=outfits[o];
+}
 </script>
 </body>
 </html>
