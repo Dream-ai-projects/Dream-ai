@@ -1,6 +1,6 @@
 /* ================= CONFIG ================= */
 // No API key here 🔥 backend will handle everything
-const BACKEND_URL = "https://your-render-backend-url.com/chat"; // <-- change later
+const BACKEND_URL = "https://dream-ai-backend-kkkk.onrender.com/chat"; // <-- change later
 
 /* ================= OUTFITS / BACKGROUNDS ================= */
 let outfits = {
