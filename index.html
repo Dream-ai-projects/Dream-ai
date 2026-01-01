@@ -1,43 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dream Waifu</title>
-<link rel="stylesheet" href="style.css">
+<style>
+body{background:#111;color:#fff;font-family:poppins;text-align:center;}
+#chat{height:350px;overflow-y:auto;border:1px solid #444;padding:10px;}
+.user{color:#0ff;text-align:right;}
+.waifu{color:#f69;text-align:left;}
+input{width:70%;padding:8px;border:none;border-radius:5px;}
+button{padding:8px 14px;margin:5px;border:none;border-radius:5px;background:#e91e63;color:#fff;}
+#avatar-box{width:200px;height:200px;margin:auto;background-size:cover;border-radius:12px;}
+</style>
 </head>
-
 <body>
 
-<div id="waifu-app">
+<h2>❤️ Dream's Anime Waifu ❤️</h2>
+<div id="avatar-box"><img id="avatar" src="outfit1.png" width="200"></div>
 
-    <!-- Avatar Panel -->
-    <div id="avatar-box">
-        <img id="avatar" src="" alt="Waifu">
-    </div>
-
-    <!-- Chat Window -->
-    <div id="chat-area">
-        <div id="chat"></div>
-    </div>
-
-    <!-- Input -->
-    <div id="input-box">
-        <input type="text" id="msg" placeholder="Talk to your waifu..." autofocus>
-        <button id="send-btn">Send</button>
-        <button id="mic-btn">🎤</button>
-    </div>
-
-    <!-- Quick Buttons -->
-    <div id="actions">
-        <button onclick="hugWaifu()">🤍 Hug</button>
-        <button onclick="kissWaifu()">😘 Kiss</button>
-        <button onclick="diceGame()">🎲 Dice</button>
-        <button onclick="triviaGame()">❓ Trivia</button>
-    </div>
-
-</div>
+<div id="chat"></div><br>
+<input id="msg" placeholder="Talk to waifu...">
+<button id="send-btn">Send</button>
+<button id="mic-btn">🎤</button>
 
 <script src="script.js"></script>
 </body>
-          </html>
+</html>
