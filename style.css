@@ -1,0 +1,59 @@
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+
+body{
+    background:#f8dce9;
+    display:flex;
+    justify-content:center;
+    padding-top:20px;
+}
+
+#waifu-app{
+    width:90%;max-width:500px;
+    display:flex;flex-direction:column;
+    gap:12px;
+}
+
+/* Avatar */
+#avatar-box{
+    width:220px;height:330px;
+    margin:auto;border-radius:15px;
+    overflow:hidden;
+    background:#0002;
+    backdrop-filter:blur(6px);
+    box-shadow:0 8px 20px rgba(0,0,0,.25);
+}
+
+#avatar{width:100%;height:100%;object-fit:cover;}
+
+/* Chat */
+#chat-area{
+    background:#fff;
+    height:400px;
+    overflow-y:auto;
+    padding:10px;border-radius:12px;
+    box-shadow:0 4px 15px rgba(0,0,0,.15);
+    display:flex;flex-direction:column;gap:7px;
+}
+
+.user,.waifu{
+    padding:7px 12px;max-width:80%;
+    border-radius:15px;line-height:1.3;
+}
+
+.user{align-self:flex-end;background:#c7ecff;}
+.waifu{align-self:flex-start;background:#ffd7eb;}
+
+/* Input */
+#input-box{display:flex;gap:6px;}
+#msg{
+    flex:1;padding:10px;border-radius:10px;
+    border:1px solid #bbb;outline:none;
+}
+#send-btn,#mic-btn,#actions button{
+    padding:10px;border:none;border-radius:10px;
+    background:#f2b6d2;cursor:pointer;
+    transition:.2s;font-weight:bold;
+}
+#send-btn:hover,#mic-btn:hover,#actions button:hover{background:#e989b8;}
+
+#actions{display:flex;gap:5px;justify-content:center;}
