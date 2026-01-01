@@ -1,59 +1,135 @@
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
-
+/* ===== Reset & Base ===== */
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
 body{
-    background:#f8dce9;
+    background: linear-gradient(135deg,#ffe1f0,#f2f0ff);
     display:flex;
     justify-content:center;
+    align-items:flex-start;
+    min-height:100vh;
     padding-top:20px;
 }
 
+/* ===== Waifu App Container ===== */
 #waifu-app{
-    width:90%;max-width:500px;
-    display:flex;flex-direction:column;
+    width:90%;
+    max-width:500px;
+    display:flex;
+    flex-direction:column;
     gap:12px;
+    background:rgba(255,255,255,0.25);
+    backdrop-filter:blur(10px);
+    border-radius:20px;
+    padding:15px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.15);
 }
 
-/* Avatar */
+/* ===== Header ===== */
+#waifu-app h1{
+    text-align:center;
+    color:#ff4dbb;
+    margin-bottom:10px;
+}
+
+/* ===== Avatar ===== */
 #avatar-box{
-    width:220px;height:330px;
-    margin:auto;border-radius:15px;
+    width:200px;
+    height:300px;
+    margin:0 auto;
+    border-radius:20px;
     overflow:hidden;
-    background:#0002;
-    backdrop-filter:blur(6px);
-    box-shadow:0 8px 20px rgba(0,0,0,.25);
+    box-shadow:0 8px 20px rgba(0,0,0,0.2);
+    background-size:cover;
+}
+#avatar{
+    width:100%;
+    height:100%;
+    object-fit:cover;
 }
 
-#avatar{width:100%;height:100%;object-fit:cover;}
+/* ===== Outfit Switch Buttons ===== */
+#outfit-switch{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    flex-wrap:wrap;
+}
+#outfit-switch button{
+    padding:6px 12px;
+    border:none;
+    border-radius:12px;
+    background:#ff9ed8;
+    color:#fff;
+    cursor:pointer;
+    transition:0.2s all;
+}
+#outfit-switch button:hover{
+    background:#ff69b4;
+}
 
-/* Chat */
-#chat-area{
-    background:#fff;
-    height:400px;
+/* ===== Chat Window ===== */
+#chat-container{
+    flex:1;
+    border-radius:15px;
+    background:rgba(255,255,255,0.6);
+    box-shadow:0 4px 12px rgba(0,0,0,0.1);
+    padding:10px;
+    max-height:400px;
     overflow-y:auto;
-    padding:10px;border-radius:12px;
-    box-shadow:0 4px 15px rgba(0,0,0,.15);
-    display:flex;flex-direction:column;gap:7px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
 }
 
-.user,.waifu{
-    padding:7px 12px;max-width:80%;
-    border-radius:15px;line-height:1.3;
+/* Chat Bubbles */
+p.user{
+    align-self:flex-end;
+    background:rgba(13,198,255,0.3);
+    color:#000;
+    padding:8px 14px;
+    border-radius:18px;
+    max-width:80%;
+    word-wrap:break-word;
+}
+p.waifu{
+    align-self:flex-start;
+    background:rgba(255,201,223,0.4);
+    color:#000;
+    padding:8px 14px;
+    border-radius:18px;
+    max-width:80%;
+    word-wrap:break-word;
+    position:relative;
+    animation:fadeIn 0.3s ease-in;
 }
 
-.user{align-self:flex-end;background:#c7ecff;}
-.waifu{align-self:flex-start;background:#ffd7eb;}
+@keyframes fadeIn{
+    0%{opacity:0;transform:translateY(5px);}
+    100%{opacity:1;transform:translateY(0);}
+}
 
-/* Input */
-#input-box{display:flex;gap:6px;}
+/* ===== Input Area ===== */
+#input-area{
+    display:flex;
+    gap:5px;
+    margin-top:8px;
+}
 #msg{
-    flex:1;padding:10px;border-radius:10px;
-    border:1px solid #bbb;outline:none;
+    flex:1;
+    padding:10px;
+    border-radius:12px;
+    border:1px solid #ccc;
+    outline:none;
 }
-#send-btn,#mic-btn,#actions button{
-    padding:10px;border:none;border-radius:10px;
-    background:#f2b6d2;cursor:pointer;
-    transition:.2s;font-weight:bold;
+#send-btn,#mic-btn{
+    padding:10px 15px;
+    border:none;
+    border-radius:12px;
+    background:#ff6fcf;
+    color:#fff;
+    cursor:pointer;
+    font-size:16px;
+    transition:0.2s all;
 }
-#send-btn:hover,#mic-btn:hover,#actions button:hover{background:#e989b8;}
-
-#actions{display:flex;gap:5px;justify-content:center;}
+#send-btn:hover,#mic-btn:hover{
+    background:#e91e63;
+}
