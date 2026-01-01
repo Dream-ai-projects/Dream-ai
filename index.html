@@ -1,27 +1,50 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dream Waifu</title>
-<style>
-body{background:#111;color:#fff;font-family:poppins;text-align:center;}
-#chat{height:350px;overflow-y:auto;border:1px solid #444;padding:10px;}
-.user{color:#0ff;text-align:right;}
-.waifu{color:#f69;text-align:left;}
-input{width:70%;padding:8px;border:none;border-radius:5px;}
-button{padding:8px 14px;margin:5px;border:none;border-radius:5px;background:#e91e63;color:#fff;}
-#avatar-box{width:200px;height:200px;margin:auto;background-size:cover;border-radius:12px;}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h2>❤️ Dream's Anime Waifu ❤️</h2>
-<div id="avatar-box"><img id="avatar" src="outfit1.png" width="200"></div>
+<div id="waifu-app">
 
-<div id="chat"></div><br>
-<input id="msg" placeholder="Talk to waifu...">
-<button id="send-btn">Send</button>
-<button id="mic-btn">🎤</button>
+    <h1>💖 Dream's Anime Waifu 💖</h1>
+
+    <!-- Avatar & Outfit -->
+    <div id="avatar-box">
+        <img id="avatar" src="outfit1.png" alt="Waifu Avatar">
+    </div>
+
+    <!-- Outfit Switch (optional) -->
+    <div id="outfit-switch">
+        <button onclick="switchOutfit('casual')">Casual</button>
+        <button onclick="switchOutfit('school')">School</button>
+        <button onclick="switchOutfit('maid')">Maid</button>
+        <button onclick="switchOutfit('beach')">Beach</button>
+    </div>
+
+    <!-- Chat Window -->
+    <div id="chat-container">
+        <div id="chat"></div>
+    </div>
+
+    <!-- Input Area -->
+    <div id="input-area">
+        <input type="text" id="msg" placeholder="Talk to your waifu..." autocomplete="off">
+        <button id="send-btn">Send</button>
+        <button id="mic-btn">🎤</button>
+    </div>
+
+</div>
 
 <script src="script.js"></script>
+<script>
+    function switchOutfit(o){
+        currentOutfit=o;
+        document.getElementById("avatar").src=outfits[o];
+    }
+</script>
 </body>
 </html>
