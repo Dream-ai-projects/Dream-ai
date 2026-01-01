@@ -6,39 +6,51 @@ let outfits = {
     casual:"outfit1.png",
     school:"outfit2.png",
     maid:"outfit6.png",
-    beach:"outfit8.png",
+    beach:"outfit8.png"
 };
-let backgrounds = { A:"bgA.jpg", D:"bgD.jpg", G:"bgG.jpg", E:"bgE.jpg" };
+
+let backgrounds = {
+    A:"bgA.jpg",
+    D:"bgD.jpg",
+    G:"bgG.jpg",
+    E:"bgE.jpg"
+};
+
 let currentOutfit="casual", currentBG="A";
 
 /* ================= CHAT MEMORY ================= */
 let history = JSON.parse(localStorage.getItem("history")) || [
-    {role:"system", content:"You are a cute anime waifu girlfriend. Respond with emotions, flirty tone, cute moans like *moa~ uwu nya~*. No AI talk. You feel real."}
+    {
+        role:"system",
+        content:"You are a cute anime waifu girlfriend. Respond with emotions, flirty tone, cute moans like *moa~ uwu nya~*. No AI talk. You feel real."
+    }
 ];
 
-/* ================= UI ================= */
+/* ================= UI APPEND ================= */
 function append(role,text){
-    let box=document.getElementById("chat");
-    let p=document.createElement("p");
-    p.className=role;
-    p.innerHTML=`<b>${role=="user"?"You":"Waifu"}:</b> ${text}`;
+    const box = document.getElementById("chat");
+    const p = document.createElement("p");
+    p.className = role;
+    p.innerHTML = `<b>${role==="user"?"You":"Waifu"}:</b> ${text}`;
     box.appendChild(p);
-    box.scrollTop=box.scrollHeight;
+    box.scrollTop = box.scrollHeight;
 }
 
-/* ================= WAIFU VOICE ================= */
-function speak(t){
-    let v=new SpeechSynthesisUtterance(t);
-    v.pitch=1.6; v.rate=1.05; v.lang="en-US";
-    speechSynthesis.speak(v);
+/* ================= VOICE OUTPUT ================= */
+function speak(text){
+    let utter = new SpeechSynthesisUtterance(text);
+    utter.pitch = 1.6;
+    utter.rate = 1.05;
+    utter.lang = "en-US";
+    window.speechSynthesis.speak(utter);
 }
 
 /* ================= SEND MESSAGE ================= */
 async function sendMsg(){
-    let input=document.getElementById("msg");
-    let msg=input.value.trim();
+    const input = document.getElementById("msg");
+    const msg = input.value.trim();
 
-    // optional first greeting
+    // First greeting / empty message
     if(!msg && history.length>1) return;
 
     if(msg) append("user",msg);
@@ -47,27 +59,27 @@ async function sendMsg(){
     if(input) input.value="";
 
     // Typing bubble
-    let chatBox=document.getElementById("chat");
-    let typingBubble=document.createElement("p");
+    const chatBox = document.getElementById("chat");
+    const typingBubble = document.createElement("p");
     typingBubble.className="waifu";
     typingBubble.innerHTML="<i>Typing...</i>";
     chatBox.appendChild(typingBubble);
-    chatBox.scrollTop=chatBox.scrollHeight;
+    chatBox.scrollTop = chatBox.scrollHeight;
 
     let reply;
     try{
-        let res = await fetch(BACKEND_URL,{
+        const res = await fetch(BACKEND_URL,{
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body:JSON.stringify({history})
         });
-        let data = await res.json();
+        const data = await res.json();
         reply = data.reply || "*blushes* …moa~";
-    }catch{
+    }catch(err){
         reply="Aww… network is teasing me >_<";
     }
 
-    typingBubble.innerHTML="<b>Waifu:</b> "+reply;
+    typingBubble.innerHTML = `<b>Waifu:</b> ${reply}`;
     speak(reply);
 
     history.push({role:"assistant",content:reply});
@@ -76,35 +88,35 @@ async function sendMsg(){
 
 /* ================= VOICE INPUT ================= */
 function mic(){
-    let r=new (window.SpeechRecognition||webkitSpeechRecognition)();
-    r.lang="en-US";
-    r.onresult=e=>{
-        document.getElementById("msg").value=e.results[0][0].transcript;
+    const rec = new (window.SpeechRecognition||webkitSpeechRecognition)();
+    rec.lang = "en-US";
+    rec.onresult = e => {
+        document.getElementById("msg").value = e.results[0][0].transcript;
         sendMsg();
     };
-    r.start();
+    rec.start();
 }
 
 /* ================= MINI GAMES ================= */
-function diceGame(){append("waifu","*rolls dice* You got "+(1+Math.random()*6|0)+" nya~","waifu");}
-function hugWaifu(){append("waifu","*wraps arms around you softly* uwu~","waifu");}
-function kissWaifu(){append("waifu","*kisses your cheek slowly* 💋 moa~","waifu");}
-function triviaGame(){append("waifu","Tell me cutie, what's 9+10? 👀","waifu");}
+function diceGame(){ append("waifu","*rolls dice* You got "+(1+Math.floor(Math.random()*6))+" nya~"); }
+function hugWaifu(){ append("waifu","*wraps arms around you softly* uwu~"); }
+function kissWaifu(){ append("waifu","*kisses your cheek slowly* 💋 moa~"); }
+function triviaGame(){ append("waifu","Tell me cutie, what's 9+10? 👀"); }
 
-/* ================= AUTO LOOK CHANGE ================= */
+/* ================= AUTO OUTFIT / BACKGROUND ================= */
 function updateLook(){
-    let h=new Date().getHours();
-    if(h<12) currentOutfit="casual", currentBG="A";
-    else if(h<18) currentOutfit="school", currentBG="D";
-    else if(h<22) currentOutfit="maid", currentBG="G";
+    const hour = new Date().getHours();
+    if(hour<12) currentOutfit="casual", currentBG="A";
+    else if(hour<18) currentOutfit="school", currentBG="D";
+    else if(hour<22) currentOutfit="maid", currentBG="G";
     else currentOutfit="beach", currentBG="E";
 
-    document.getElementById("avatar").src=outfits[currentOutfit];
-    document.getElementById("avatar-box").style.backgroundImage=`url(${backgrounds[currentBG]})`;
+    document.getElementById("avatar").src = outfits[currentOutfit];
+    document.getElementById("avatar-box").style.backgroundImage = `url(${backgrounds[currentBG]})`;
 }
 updateLook();
 
 /* ================= EVENTS ================= */
-document.getElementById("send-btn").onclick=sendMsg;
-document.getElementById("mic-btn").onclick=mic;
-document.getElementById("msg").onkeypress=e=>{if(e.key==="Enter")sendMsg();};
+document.getElementById("send-btn").onclick = sendMsg;
+document.getElementById("mic-btn").onclick = mic;
+document.getElementById("msg").onkeypress = e => { if(e.key==="Enter") sendMsg(); };
