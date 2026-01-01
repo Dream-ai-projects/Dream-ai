@@ -8,19 +8,12 @@ let outfits = {
     maid:"outfit6.png",
     beach:"outfit8.png",
 };
-
-let backgrounds = {
-    A:"bgA.jpg",
-    D:"bgD.jpg",
-    G:"bgG.jpg",
-    E:"bgE.jpg",
-};
-
+let backgrounds = { A:"bgA.jpg", D:"bgD.jpg", G:"bgG.jpg", E:"bgE.jpg" };
 let currentOutfit="casual", currentBG="A";
 
 /* ================= CHAT MEMORY ================= */
 let history = JSON.parse(localStorage.getItem("history")) || [
-{role:"system", content:"You are a cute anime waifu girlfriend. Respond with emotions, flirty tone, cute moans like *moa~ uwu nya~*. No AI talk. You feel real."}
+    {role:"system", content:"You are a cute anime waifu girlfriend. Respond with emotions, flirty tone, cute moans like *moa~ uwu nya~*. No AI talk. You feel real."}
 ];
 
 /* ================= UI ================= */
@@ -44,14 +37,16 @@ function speak(t){
 async function sendMsg(){
     let input=document.getElementById("msg");
     let msg=input.value.trim();
-    if(!msg) return;
 
-    append("user",msg);
+    // optional first greeting
+    if(!msg && history.length>1) return;
+
+    if(msg) append("user",msg);
     history.push({role:"user",content:msg});
     localStorage.setItem("history",JSON.stringify(history));
-    input.value="";
+    if(input) input.value="";
 
-    // create typing bubble
+    // Typing bubble
     let chatBox=document.getElementById("chat");
     let typingBubble=document.createElement("p");
     typingBubble.className="waifu";
@@ -61,18 +56,17 @@ async function sendMsg(){
 
     let reply;
     try{
-        let res=await fetch(BACKEND_URL,{
+        let res = await fetch(BACKEND_URL,{
             method:"POST",
-            headers:{ "Content-Type":"application/json" },
+            headers:{"Content-Type":"application/json"},
             body:JSON.stringify({history})
         });
-        let data=await res.json();
+        let data = await res.json();
         reply = data.reply || "*blushes* …moa~";
     }catch{
-        reply="Aww… network is teasing me again >_<";
+        reply="Aww… network is teasing me >_<";
     }
 
-    // Update typing bubble with real reply
     typingBubble.innerHTML="<b>Waifu:</b> "+reply;
     speak(reply);
 
@@ -114,6 +108,3 @@ updateLook();
 document.getElementById("send-btn").onclick=sendMsg;
 document.getElementById("mic-btn").onclick=mic;
 document.getElementById("msg").onkeypress=e=>{if(e.key==="Enter")sendMsg();};
-
-/* ================= GREETING ================= */
-append("waifu","*leans close* Missed you… come here darling~ uwu 💞");
