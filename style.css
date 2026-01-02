@@ -99,3 +99,50 @@ p.waifu{
   color:white;
   font-size:16px;
 }
+#settings-btn {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  font-size: 22px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  padding: 8px 10px;
+  border-radius: 50%;
+  z-index: 999;
+}
+
+#settings-panel {
+  position: fixed;
+  top: 60px;
+  right: 12px;
+  width: 220px;
+  background: #111;
+  color: white;
+  padding: 12px;
+  border-radius: 10px;
+  z-index: 999;
+}
+
+#settings-panel h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+#settings-panel button {
+  width: 100%;
+  padding: 6px;
+  background: #444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+
+.hidden {
+  display: none;
+}
