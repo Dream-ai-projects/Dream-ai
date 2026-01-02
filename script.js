@@ -1,11 +1,12 @@
-/* ================= BACKEND ================= */
 const BACKEND_URL = "https://dream-ai-backend-kkkk.onrender.com/chat";
 
-/* ================= CHAT ================= */
-let history = JSON.parse(localStorage.getItem("history")) || [];
+/* ===== CHAT ===== */
+let history = [];
+
+const chat = document.getElementById("chat");
+const input = document.getElementById("msg");
 
 function append(role,text){
-  const chat=document.getElementById("chat");
   const p=document.createElement("p");
   p.className=role;
   p.innerHTML=`<b>${role==="user"?"You":"Waifu"}:</b> ${text}`;
@@ -14,56 +15,36 @@ function append(role,text){
 }
 
 async function sendMsg(){
-  const input=document.getElementById("msg");
   const msg=input.value.trim();
   if(!msg) return;
 
   append("user",msg);
-  history.push({role:"user",content:msg});
   input.value="";
 
   const typing=document.createElement("p");
   typing.className="waifu";
   typing.innerHTML="<i>Typing…</i>";
-  document.getElementById("chat").appendChild(typing);
+  chat.appendChild(typing);
 
-  let reply="...";
   try{
     const res=await fetch(BACKEND_URL,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({history})
+      body:JSON.stringify({message:msg})
     });
     const data=await res.json();
-    reply=data.reply || "...";
+    typing.innerHTML=`<b>Waifu:</b> ${data.reply || "..."}`;
   }catch(e){
-    reply="Connection error.";
+    typing.innerHTML="<b>Waifu:</b> Backend error";
   }
-
-  typing.innerHTML=`<b>Waifu:</b> ${reply}`;
-  history.push({role:"assistant",content:reply});
-  localStorage.setItem("history",JSON.stringify(history));
 }
 
-document.getElementById("send-btn").onclick=sendMsg;
-document.getElementById("msg").onkeypress=e=>{
+document.getElementById("send-btn").addEventListener("click",sendMsg);
+input.addEventListener("keydown",e=>{
   if(e.key==="Enter") sendMsg();
-};
+});
 
-/* ================= VOICE INPUT ================= */
-document.getElementById("mic-btn").onclick=()=>{
-  const R=window.SpeechRecognition||webkitSpeechRecognition;
-  if(!R) return alert("Voice not supported");
-  const r=new R();
-  r.lang="en-US";
-  r.onresult=e=>{
-    document.getElementById("msg").value=e.results[0][0].transcript;
-    sendMsg();
-  };
-  r.start();
-};
-
-/* ================= VRM ================= */
+/* ===== VRM ===== */
 let scene,camera,renderer,vrm;
 
 function initVRM(){
@@ -71,12 +52,7 @@ function initVRM(){
 
   scene=new THREE.Scene();
 
-  camera=new THREE.PerspectiveCamera(
-    30,
-    canvas.clientWidth/canvas.clientHeight,
-    0.1,
-    1000
-  );
+  camera=new THREE.PerspectiveCamera(30,1,0.1,100);
   camera.position.set(0,1.4,2.2);
 
   renderer=new THREE.WebGLRenderer({
@@ -84,20 +60,26 @@ function initVRM(){
     alpha:true,
     antialias:true
   });
-  renderer.setSize(canvas.clientWidth,canvas.clientHeight);
-  renderer.setPixelRatio(window.devicePixelRatio);
 
-  scene.add(new THREE.AmbientLight(0xffffff,0.7));
-  const light=new THREE.DirectionalLight(0xffffff,1.2);
+  const resize=()=>{
+    const w=canvas.clientWidth;
+    const h=canvas.clientHeight;
+    renderer.setSize(w,h,false);
+    camera.aspect=w/h;
+    camera.updateProjectionMatrix();
+  };
+  resize();
+  window.addEventListener("resize",resize);
+
+  scene.add(new THREE.AmbientLight(0xffffff,0.8));
+  const light=new THREE.DirectionalLight(0xffffff,1);
   light.position.set(1,2,3);
   scene.add(light);
 
   const loader=new THREE.GLTFLoader();
   loader.load(
-    "oni.vrm",
+    "./oni.vrm",
     gltf=>{
-      THREE.VRMUtils.removeUnnecessaryVertices(gltf.scene);
-      THREE.VRMUtils.removeUnnecessaryJoints(gltf.scene);
       THREE.VRM.from(gltf).then(v=>{
         vrm=v;
         vrm.scene.rotation.y=Math.PI;
@@ -105,7 +87,7 @@ function initVRM(){
       });
     },
     undefined,
-    e=>console.error(e)
+    err=>console.error("VRM LOAD ERROR",err)
   );
 
   animate();
