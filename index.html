@@ -1,50 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Dream Waifu</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
 <div id="waifu-app">
 
-    <h1>💖 Dream's Waifu 💖</h1>
+  <h1>Dream Waifu</h1>
 
-    <!-- Avatar Box -->
-    <div id="avatar-box">
-        <img id="avatar" src="outfit1.png" alt="Waifu Avatar">
-    </div>
+  <!-- VRM CANVAS -->
+  <div id="avatar-box">
+    <canvas id="vrm-canvas"></canvas>
+  </div>
 
-    <!-- Outfit Switch -->
-    <div id="outfit-switch">
-        <button onclick="switchOutfit('casual')">Casual</button>
-        <button onclick="switchOutfit('school')">School</button>
-        <button onclick="switchOutfit('maid')">Maid</button>
-        <button onclick="switchOutfit('beach')">Beach</button>
-    </div>
+  <!-- CHAT -->
+  <div id="chat-container">
+    <div id="chat"></div>
+  </div>
 
-    <!-- Chat Container -->
-    <div id="chat-container">
-        <div id="chat"></div>
-    </div>
-
-    <!-- Input Area -->
-    <div id="input-area">
-        <input type="text" id="msg" placeholder="Talk to your waifu..." autocomplete="off">
-        <button id="send-btn">Send</button>
-        <button id="mic-btn">🎤</button>
-    </div>
+  <!-- INPUT -->
+  <div id="input-area">
+    <input id="msg" placeholder="Talk to her..." />
+    <button id="send-btn">Send</button>
+    <button id="mic-btn">🎤</button>
+  </div>
 
 </div>
 
+<!-- THREE + VRM -->
+<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://unpkg.com/@pixiv/three-vrm@2.0.6/lib/three-vrm.js"></script>
+
 <script src="script.js"></script>
-<script>
-function switchOutfit(o){
-    currentOutfit=o;
-    document.getElementById("avatar").src=outfits[o];
-}
-</script>
 </body>
 </html>
