@@ -12,6 +12,18 @@ function append(role, text){
   chat.scrollTop = chat.scrollHeight;
 }
 
+/* ================= SPEECH ================= */
+let speaking = false;
+
+function speak(text){
+  const u = new SpeechSynthesisUtterance(text);
+  u.pitch = 1.5;
+  u.rate = 1.05;
+  u.onstart = ()=> speaking = true;
+  u.onend = ()=> speaking = false;
+  speechSynthesis.speak(u);
+}
+
 async function sendMsg(){
   const input = document.getElementById("msg");
   const text = input.value.trim();
@@ -37,6 +49,8 @@ async function sendMsg(){
     typing.innerHTML = `<b>Waifu:</b> ${data.reply}`;
     history.push({ role:"assistant", content:data.reply });
     localStorage.setItem("history", JSON.stringify(history));
+    speak(data.reply);
+
   }catch{
     typing.innerHTML = "Connection failed.";
   }
@@ -46,7 +60,6 @@ async function sendMsg(){
 send-btn.onclick = sendMsg;
 msg.onkeydown = e => e.key==="Enter" && sendMsg();
 
-/* ================= VOICE ================= */
 mic-btn.onclick = ()=>{
   const r = new (SpeechRecognition||webkitSpeechRecognition)();
   r.lang="en-US";
@@ -73,9 +86,10 @@ scene.add(new THREE.DirectionalLight(0xffffff,1).position.set(1,1,1));
 scene.add(new THREE.AmbientLight(0xffffff,0.6));
 
 let currentVRM;
+let blinkTimer = 0;
 
 new THREE.GLTFLoader().load(
-  "vrm/havewaifu.vrm",
+  "oni.vrm",
   gltf=>{
     THREE.VRMUtils.removeUnnecessaryVertices(gltf.scene);
     THREE.VRMUtils.removeUnnecessaryJoints(gltf.scene);
@@ -88,11 +102,36 @@ new THREE.GLTFLoader().load(
   }
 );
 
+/* ================= ANIMATION LOOP ================= */
 function animate(){
   requestAnimationFrame(animate);
+
   if(currentVRM){
+    const t = performance.now() * 0.001;
+
+    // idle breathing
+    currentVRM.scene.position.y = Math.sin(t*2)*0.01;
+
+    // subtle sway
+    currentVRM.scene.rotation.y = Math.PI + Math.sin(t)*0.03;
+
+    // blinking
+    blinkTimer += 0.02;
+    if(blinkTimer > 4){
+      currentVRM.expressionManager.setValue("blink",1);
+      setTimeout(()=>currentVRM.expressionManager.setValue("blink",0),150);
+      blinkTimer = 0;
+    }
+
+    // mouth movement while speaking
+    currentVRM.expressionManager.setValue(
+      "aa",
+      speaking ? Math.random()*0.6 : 0
+    );
+
     currentVRM.update(0.016);
   }
+
   renderer.render(scene,camera);
 }
 animate();
