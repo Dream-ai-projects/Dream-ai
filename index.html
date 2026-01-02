@@ -30,6 +30,29 @@
     </div>
 
 </div>
+<!-- Settings Button -->
+<div id="settings-btn">⚙️</div>
+
+<!-- Settings Panel -->
+<div id="settings-panel" class="hidden">
+  <h3>Settings</h3>
+
+  <label class="setting-row">
+    <span>Memory</span>
+    <input type="checkbox" id="memory-toggle" checked>
+  </label>
+
+  <label class="setting-row">
+    <span>Personality</span>
+    <select id="personality-select">
+      <option value="waifu">Waifu</option>
+      <option value="girlfriend">Girlfriend</option>
+      <option value="cute">Cute</option>
+    </select>
+  </label>
+
+  <button id="close-settings">Close</button>
+</div>
 
 <!-- Three.js + VRM -->
 <script src="https://unpkg.com/three@0.155.0/build/three.min.js"></script>
