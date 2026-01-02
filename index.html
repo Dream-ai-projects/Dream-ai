@@ -1,40 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dream Waifu</title>
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div id="waifu-app">
 
-  <h1>Dream Waifu</h1>
+    <h1>Dream Waifu</h1>
 
-  <!-- VRM CANVAS -->
-  <div id="avatar-box">
-    <canvas id="vrm-canvas"></canvas>
-  </div>
+    <!-- VRM Avatar -->
+    <div id="avatar-box">
+        <canvas id="vrm-canvas"></canvas>
+    </div>
 
-  <!-- CHAT -->
-  <div id="chat-container">
-    <div id="chat"></div>
-  </div>
+    <!-- Chat -->
+    <div id="chat-container">
+        <div id="chat"></div>
+    </div>
 
-  <!-- INPUT -->
-  <div id="input-area">
-    <input id="msg" placeholder="Talk to her..." />
-    <button id="send-btn">Send</button>
-    <button id="mic-btn">🎤</button>
-  </div>
+    <!-- Input -->
+    <div id="input-area">
+        <input id="msg" type="text" placeholder="Talk to her..." autocomplete="off">
+        <button id="send-btn">Send</button>
+        <button id="mic-btn">🎤</button>
+    </div>
 
 </div>
 
-<!-- THREE + VRM -->
-<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://unpkg.com/@pixiv/three-vrm@2.0.6/lib/three-vrm.js"></script>
+<!-- Three.js + VRM -->
+<script src="https://unpkg.com/three@0.155.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.155.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://unpkg.com/@pixiv/three-vrm@2.0.3/lib/three-vrm.js"></script>
 
 <script src="script.js"></script>
 </body>
