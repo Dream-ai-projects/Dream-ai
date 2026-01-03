@@ -1,13 +1,14 @@
 const BACKEND_URL = "https://dream-ai-backend-kkkk.onrender.com/chat";
 
-/* ================= CHAT ================= */
+/* ================= CHAT MEMORY ================= */
 let history = JSON.parse(localStorage.getItem("waifu_history")) || [];
-let memoryEnabled = localStorage.getItem("memory") !== "off";
 
+/* ================= DOM ================= */
 const chat = document.getElementById("chat");
 const input = document.getElementById("msg");
 const sendBtn = document.getElementById("send-btn");
 
+/* ================= CHAT UI ================= */
 function append(role, text) {
   const p = document.createElement("p");
   p.className = role;
@@ -16,6 +17,7 @@ function append(role, text) {
   chat.scrollTop = chat.scrollHeight;
 }
 
+/* ================= SEND MESSAGE ================= */
 async function sendMsg() {
   const msg = input.value.trim();
   if (!msg) return;
@@ -24,15 +26,14 @@ async function sendMsg() {
   input.value = "";
   input.blur();
 
-  if (memoryEnabled) {
-    history.push({ role: "user", content: msg });
-    localStorage.setItem("waifu_history", JSON.stringify(history));
-  }
+  history.push({ role: "user", content: msg });
+  localStorage.setItem("waifu_history", JSON.stringify(history));
 
   const typing = document.createElement("p");
   typing.className = "waifu";
   typing.innerHTML = "<i>Typing…</i>";
   chat.appendChild(typing);
+  chat.scrollTop = chat.scrollHeight;
 
   try {
     const res = await fetch(BACKEND_URL, {
@@ -40,7 +41,7 @@ async function sendMsg() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message: msg,
-        history: memoryEnabled ? history : []
+        history: history
       })
     });
 
@@ -49,42 +50,36 @@ async function sendMsg() {
 
     typing.innerHTML = `<b>Waifu:</b> ${reply}`;
 
-    if (memoryEnabled) {
-      history.push({ role: "assistant", content: reply });
-      localStorage.setItem("waifu_history", JSON.stringify(history));
-    }
-  } catch {
-    typing.innerHTML = "<b>Waifu:</b> network error 😿";
+    history.push({ role: "assistant", content: reply });
+    localStorage.setItem("waifu_history", JSON.stringify(history));
+
+  } catch (e) {
+    typing.innerHTML = "<b>Waifu:</b> network issue 😿";
   }
 }
 
-sendBtn.onclick = sendMsg;
-input.onkeydown = e => {
+sendBtn.addEventListener("click", sendMsg);
+input.addEventListener("keydown", e => {
   if (e.key === "Enter") {
     e.preventDefault();
     sendMsg();
   }
-};
+});
 
-/* ================= VRM (SAFE MODE) ================= */
+/* ================= VRM SETUP ================= */
 let scene, camera, renderer, vrm;
 const clock = new THREE.Clock();
 
 function initVRM() {
   const canvas = document.getElementById("vrm-canvas");
-  if (!canvas) {
-    console.error("Canvas not found");
-    return;
-  }
-
-  /* 🔥 FORCE CANVAS SIZE (CRITICAL) */
-  canvas.style.width = "100%";
-  canvas.style.height = "400px";
+  if (!canvas) return;
 
   scene = new THREE.Scene();
 
-  camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
-  camera.position.set(0, 1.45, 2.8); // SAFE DISTANCE
+  /* 🔥 CAMERA FIX (SEE MORE BODY) */
+  camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+  camera.position.set(0, 1.35, 2.6); // farther back
+  camera.lookAt(0, 1.2, 0);
 
   renderer = new THREE.WebGLRenderer({
     canvas,
@@ -92,14 +87,23 @@ function initVRM() {
     antialias: true
   });
 
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(canvas.clientWidth, 400);
   renderer.setClearColor(0x000000, 0);
 
+  function resize() {
+    const w = canvas.clientWidth || 300;
+    const h = canvas.clientHeight || 420;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+
+  resize();
+  window.addEventListener("resize", resize);
+
   scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-  const dir = new THREE.DirectionalLight(0xffffff, 1);
-  dir.position.set(1, 2, 3);
-  scene.add(dir);
+  const light = new THREE.DirectionalLight(0xffffff, 1);
+  light.position.set(1, 2, 3);
+  scene.add(light);
 
   const loader = new THREE.GLTFLoader();
   loader.load(
@@ -108,13 +112,20 @@ function initVRM() {
       THREE.VRM.from(gltf).then(v => {
         vrm = v;
 
-        /* 🔥 FORCE VISIBILITY */
-        vrm.scene.scale.set(1, 1, 1);
+        /* 🔒 LOCK BODY (STOP SWIMMING) */
         vrm.scene.position.set(0, 0, 0);
-        vrm.scene.rotation.y = Math.PI;
+        vrm.scene.rotation.set(0, Math.PI, 0);
+        vrm.scene.scale.set(1, 1, 1);
+
+        // HARD LOCK ROOT
+        if (vrm.humanoid) {
+          const hips = vrm.humanoid.getBoneNode("hips");
+          if (hips) {
+            hips.position.set(0, 0, 0);
+          }
+        }
 
         scene.add(vrm.scene);
-        console.log("VRM LOADED ✅");
       });
     },
     undefined,
@@ -124,14 +135,36 @@ function initVRM() {
   animate();
 }
 
+/* ================= BLINKING ================= */
+let blinkTimer = 0;
+let nextBlink = 2 + Math.random() * 3;
+
+function handleBlink(delta) {
+  if (!vrm || !vrm.expressionManager) return;
+
+  blinkTimer += delta;
+
+  if (blinkTimer > nextBlink) {
+    vrm.expressionManager.setValue("blink", 1);
+
+    setTimeout(() => {
+      vrm.expressionManager.setValue("blink", 0);
+    }, 120);
+
+    blinkTimer = 0;
+    nextBlink = 2 + Math.random() * 4;
+  }
+}
+
+/* ================= ANIMATION LOOP ================= */
 function animate() {
   requestAnimationFrame(animate);
 
-  if (vrm) {
-    vrm.update(clock.getDelta());
+  const delta = clock.getDelta();
 
-    // very light idle motion (SAFE)
-    vrm.scene.rotation.z = Math.sin(clock.elapsedTime) * 0.01;
+  if (vrm) {
+    vrm.update(delta);
+    handleBlink(delta);
   }
 
   renderer.render(scene, camera);
@@ -141,5 +174,5 @@ window.addEventListener("load", initVRM);
 
 /* ================= GREETING ================= */
 if (history.length === 0) {
-  append("waifu", "*looks at you* Hey… I’m here 💗");
+  append("waifu", "*looks up at you* Hey… you’re here 💗");
 }
