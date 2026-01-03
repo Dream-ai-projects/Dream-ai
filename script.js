@@ -39,10 +39,7 @@ async function sendMsg() {
     const res = await fetch(BACKEND_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: msg,
-        history: history
-      })
+      body: JSON.stringify({ message: msg, history })
     });
 
     const data = await res.json();
@@ -66,7 +63,7 @@ input.addEventListener("keydown", e => {
   }
 });
 
-/* ===== PERSONALITY MODE (SETTINGS READY) ===== */
+/* ===== PERSONALITY MODE ===== */
 async function changeMode(mode) {
   try {
     await fetch("https://dream-ai-backend-kkkk.onrender.com/mode", {
@@ -86,8 +83,9 @@ async function changeMode(mode) {
 /* ===== VRM ===== */
 let scene, camera, renderer, vrm;
 const clock = new THREE.Clock();
-let initialY = 1.1; // 🔥 raise model so head + torso visible
-let cameraY = 1.4;  // 🔥 camera slightly lower
+const initialY = 1.3;  // model Y position (raise so head + torso visible)
+const cameraY = 1.35;  // camera Y (slightly lower than before)
+const modelScale = 1.0; // adjust if needed
 
 // Blink helper
 let blinkTimer = 0;
@@ -103,18 +101,19 @@ function blink(vrm, delta) {
   }
 }
 
-// Idle sway & arm relax
+// Idle sway + slight arm relax + subtle spine movement
 function idleSway(vrm, delta) {
   if (!vrm || !vrm.scene) return;
   const time = Date.now() / 1000;
 
-  const sway = Math.sin(time) * 0.02;
-  const bob = Math.sin(time / 1.5) * 0.005;
+  // Sway left-right and subtle up-down
+  const sway = Math.sin(time) * 0.015;
+  const bob = Math.sin(time / 1.5) * 0.003;
 
   vrm.scene.rotation.y = Math.PI + sway;
   vrm.scene.position.y = initialY + bob;
 
-  // Arm relax
+  // Arms relax
   const leftArm = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.LeftUpperArm);
   const rightArm = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.RightUpperArm);
   if (leftArm) leftArm.rotation.x = Math.sin(time) * 0.05 - 0.15;
@@ -131,7 +130,7 @@ function initVRM() {
 
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-  camera.position.set(0, cameraY, 2.2); // 🔥 frame head + torso
+  camera.position.set(0, cameraY, 2.0); // move camera closer + lower to frame torso
 
   renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setClearColor(0x000000, 0);
@@ -146,11 +145,13 @@ function initVRM() {
   resize();
   window.addEventListener("resize", resize);
 
+  // Lighting
   scene.add(new THREE.AmbientLight(0xffffff, 0.8));
   const light = new THREE.DirectionalLight(0xffffff, 1);
   light.position.set(1, 2, 3);
   scene.add(light);
 
+  // Load VRM
   const loader = new THREE.GLTFLoader();
   loader.load(
     "./oni.vrm",
@@ -158,7 +159,7 @@ function initVRM() {
       THREE.VRM.from(gltf).then(v => {
         vrm = v;
 
-        vrm.scene.scale.set(1, 1, 1);
+        vrm.scene.scale.set(modelScale, modelScale, modelScale);
         vrm.scene.position.set(0, initialY, 0);
         vrm.scene.rotation.y = Math.PI;
 
@@ -179,9 +180,7 @@ function animate() {
     blink(vrm, delta);
     idleSway(vrm, delta);
   }
-  if (renderer && scene && camera) {
-    renderer.render(scene, camera);
-  }
+  if (renderer && scene && camera) renderer.render(scene, camera);
 }
 
 window.addEventListener("load", initVRM);
