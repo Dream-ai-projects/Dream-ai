@@ -83,9 +83,11 @@ async function changeMode(mode) {
 /* ===== VRM ===== */
 let scene, camera, renderer, vrm;
 const clock = new THREE.Clock();
-const initialY = 1.3;  // model Y position (raise so head + torso visible)
-const cameraY = 1.35;  // camera Y (slightly lower than before)
-const modelScale = 1.0; // adjust if needed
+
+// Model position + camera setup
+const modelY = 1.65;     // 🔥 raise her so head visible
+const cameraY = 1.25;    // 🔥 lower camera slightly
+const modelScale = 1.0;  // adjust for fitting canvas
 
 // Blink helper
 let blinkTimer = 0;
@@ -101,19 +103,19 @@ function blink(vrm, delta) {
   }
 }
 
-// Idle sway + slight arm relax + subtle spine movement
+// Idle sway + arm relax + spine sway
 function idleSway(vrm, delta) {
   if (!vrm || !vrm.scene) return;
   const time = Date.now() / 1000;
 
-  // Sway left-right and subtle up-down
+  // Subtle sway + bob
   const sway = Math.sin(time) * 0.015;
   const bob = Math.sin(time / 1.5) * 0.003;
 
   vrm.scene.rotation.y = Math.PI + sway;
-  vrm.scene.position.y = initialY + bob;
+  vrm.scene.position.y = modelY + bob;
 
-  // Arms relax
+  // Relax arms
   const leftArm = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.LeftUpperArm);
   const rightArm = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.RightUpperArm);
   if (leftArm) leftArm.rotation.x = Math.sin(time) * 0.05 - 0.15;
@@ -130,7 +132,7 @@ function initVRM() {
 
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-  camera.position.set(0, cameraY, 2.0); // move camera closer + lower to frame torso
+  camera.position.set(0, cameraY, 2.0); // 🔥 camera lower + closer
 
   renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setClearColor(0x000000, 0);
@@ -160,7 +162,7 @@ function initVRM() {
         vrm = v;
 
         vrm.scene.scale.set(modelScale, modelScale, modelScale);
-        vrm.scene.position.set(0, initialY, 0);
+        vrm.scene.position.set(0, modelY, 0);
         vrm.scene.rotation.y = Math.PI;
 
         scene.add(vrm.scene);
