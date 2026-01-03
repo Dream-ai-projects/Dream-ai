@@ -103,6 +103,7 @@ function initVRM() {
     antialias: true
   });
 
+  renderer.setClearColor(0x000000, 0);
   function resize() {
     const w = canvas.clientWidth || 300;
     const h = canvas.clientHeight || 400;
@@ -124,12 +125,16 @@ function initVRM() {
   loader.load(
     "./oni.vrm",
     gltf => {
-      THREE.VRM.from(gltf).then(v => {
-        vrm = v;
-        vrm.scene.rotation.y = Math.PI;
-        scene.add(vrm.scene);
-      });
-    },
+    THREE.VRM.from(gltf).then(v => {
+  vrm = v;
+
+  // 🔥 FORCE VISIBILITY
+  vrm.scene.scale.set(1, 1, 1);
+  vrm.scene.position.set(0, 0, 0);
+  vrm.scene.rotation.y = Math.PI;
+
+  scene.add(vrm.scene);
+});
     undefined,
     err => console.error("VRM LOAD ERROR", err)
   );
