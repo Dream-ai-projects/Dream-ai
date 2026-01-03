@@ -86,15 +86,15 @@ async function changeMode(mode) {
 /* ===== VRM ===== */
 let scene, camera, renderer, vrm;
 const clock = new THREE.Clock();
-let initialY = 1.5; // 🔥 head + torso visible
-let cameraY = 1.6;  // 🔥 camera height
+let initialY = 1.1; // 🔥 raise model so head + torso visible
+let cameraY = 1.4;  // 🔥 camera slightly lower
 
 // Blink helper
 let blinkTimer = 0;
 function blink(vrm, delta) {
   if (!vrm) return;
   blinkTimer += delta;
-  if (blinkTimer > 4) { // every ~4 seconds
+  if (blinkTimer > 4) {
     vrm.blendShapeProxy?.setValue(THREE.VRM.BlendShapePresetName.Blink, 1);
     setTimeout(() => {
       vrm.blendShapeProxy?.setValue(THREE.VRM.BlendShapePresetName.Blink, 0);
@@ -117,10 +117,10 @@ function idleSway(vrm, delta) {
   // Arm relax
   const leftArm = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.LeftUpperArm);
   const rightArm = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.RightUpperArm);
-  if (leftArm) leftArm.rotation.x = Math.sin(time) * 0.05 - 0.2;
-  if (rightArm) rightArm.rotation.x = Math.sin(time + 1) * 0.05 - 0.2;
+  if (leftArm) leftArm.rotation.x = Math.sin(time) * 0.05 - 0.15;
+  if (rightArm) rightArm.rotation.x = Math.sin(time + 1) * 0.05 - 0.15;
 
-  // Optional: slight spine movement for body sway
+  // Spine subtle sway
   const spine = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.Spine);
   if (spine) spine.rotation.x = Math.sin(time / 2) * 0.02;
 }
@@ -131,7 +131,7 @@ function initVRM() {
 
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-  camera.position.set(0, cameraY, 2.5); // 🔥 camera back + height
+  camera.position.set(0, cameraY, 2.2); // 🔥 frame head + torso
 
   renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setClearColor(0x000000, 0);
