@@ -1,14 +1,12 @@
 const BACKEND_URL = "https://dream-ai-backend-kkkk.onrender.com/chat";
 
-/* ===== CHAT MEMORY ===== */
+/* ================= CHAT ================= */
 let history = JSON.parse(localStorage.getItem("waifu_history")) || [];
 
-/* ===== DOM ===== */
 const chat = document.getElementById("chat");
 const input = document.getElementById("msg");
 const sendBtn = document.getElementById("send-btn");
 
-/* ===== UI APPEND ===== */
 function append(role, text) {
   const p = document.createElement("p");
   p.className = role;
@@ -17,7 +15,6 @@ function append(role, text) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-/* ===== SEND MESSAGE ===== */
 async function sendMsg() {
   const msg = input.value.trim();
   if (!msg) return;
@@ -33,7 +30,6 @@ async function sendMsg() {
   typing.className = "waifu";
   typing.innerHTML = "<i>Typing…</i>";
   chat.appendChild(typing);
-  chat.scrollTop = chat.scrollHeight;
 
   try {
     const res = await fetch(BACKEND_URL, {
@@ -46,100 +42,76 @@ async function sendMsg() {
     const reply = data.reply || "...";
 
     typing.innerHTML = `<b>Waifu:</b> ${reply}`;
-
     history.push({ role: "assistant", content: reply });
     localStorage.setItem("waifu_history", JSON.stringify(history));
-  } catch (e) {
+  } catch {
     typing.innerHTML = "<b>Waifu:</b> network issue 😿";
   }
 }
 
-/* ===== EVENTS (MOBILE SAFE) ===== */
-sendBtn.addEventListener("click", sendMsg);
-input.addEventListener("keydown", e => {
+sendBtn.onclick = sendMsg;
+input.onkeydown = e => {
   if (e.key === "Enter") {
     e.preventDefault();
     sendMsg();
   }
-});
+};
 
-/* ===== PERSONALITY MODE ===== */
-async function changeMode(mode) {
-  try {
-    await fetch("https://dream-ai-backend-kkkk.onrender.com/mode", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode })
-    });
-
-    history = [];
-    localStorage.removeItem("waifu_history");
-    append("waifu", `*smiles softly* I’ll act as your ${mode} now~`);
-  } catch {
-    append("waifu", "tilts head couldn’t change mode…");
-  }
-}
-
-/* ===== VRM ===== */
+/* ================= VRM ================= */
 let scene, camera, renderer, vrm;
 const clock = new THREE.Clock();
 
-// Model position + camera setup
-const modelY = 1.65;     // 🔥 raise her so head visible
-const cameraY = 1.25;    // 🔥 lower camera slightly
-const modelScale = 1.0;  // adjust for fitting canvas
-
-// Blink helper
+// Blink
 let blinkTimer = 0;
-function blink(vrm, delta) {
-  if (!vrm) return;
+function blink(delta) {
+  if (!vrm?.blendShapeProxy) return;
   blinkTimer += delta;
   if (blinkTimer > 4) {
-    vrm.blendShapeProxy?.setValue(THREE.VRM.BlendShapePresetName.Blink, 1);
+    vrm.blendShapeProxy.setValue(
+      THREE.VRM.BlendShapePresetName.Blink,
+      1
+    );
     setTimeout(() => {
-      vrm.blendShapeProxy?.setValue(THREE.VRM.BlendShapePresetName.Blink, 0);
-    }, 150);
+      vrm.blendShapeProxy.setValue(
+        THREE.VRM.BlendShapePresetName.Blink,
+        0
+      );
+    }, 120);
     blinkTimer = 0;
   }
 }
 
-// Idle sway + arm relax + spine sway
-function idleSway(vrm, delta) {
-  if (!vrm || !vrm.scene) return;
-  const time = Date.now() / 1000;
+// Idle rotation ONLY (no Y movement)
+function idleMotion() {
+  if (!vrm) return;
+  const t = Date.now() * 0.001;
+  vrm.scene.rotation.y = Math.PI + Math.sin(t) * 0.02;
 
-  // Subtle sway + bob
-  const sway = Math.sin(time) * 0.015;
-  const bob = Math.sin(time / 1.5) * 0.003;
-
-  vrm.scene.rotation.y = Math.PI + sway;
-  vrm.scene.position.y = modelY + bob;
-
-  // Relax arms
-  const leftArm = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.LeftUpperArm);
-  const rightArm = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.RightUpperArm);
-  if (leftArm) leftArm.rotation.x = Math.sin(time) * 0.05 - 0.15;
-  if (rightArm) rightArm.rotation.x = Math.sin(time + 1) * 0.05 - 0.15;
-
-  // Spine subtle sway
-  const spine = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.Spine);
-  if (spine) spine.rotation.x = Math.sin(time / 2) * 0.02;
+  const spine = vrm.humanoid?.getBoneNode(
+    THREE.VRMSchema.HumanoidBoneName.Spine
+  );
+  if (spine) spine.rotation.x = Math.sin(t) * 0.03;
 }
 
 function initVRM() {
   const canvas = document.getElementById("vrm-canvas");
-  if (!canvas || !window.THREE) return;
 
   scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-  camera.position.set(0, cameraY, 2.0); // 🔥 camera lower + closer
 
-  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+  camera.position.set(0, 1.35, 2.4); // 🔥 FIX
+  camera.lookAt(0, 1.35, 0);         // 🔥 FIX
+
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    alpha: true,
+    antialias: true
+  });
   renderer.setClearColor(0x000000, 0);
 
   function resize() {
-    const w = canvas.clientWidth || 300;
-    const h = canvas.clientHeight || 400;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -147,30 +119,23 @@ function initVRM() {
   resize();
   window.addEventListener("resize", resize);
 
-  // Lighting
-  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
   const light = new THREE.DirectionalLight(0xffffff, 1);
   light.position.set(1, 2, 3);
   scene.add(light);
 
-  // Load VRM
   const loader = new THREE.GLTFLoader();
-  loader.load(
-    "./oni.vrm",
-    gltf => {
-      THREE.VRM.from(gltf).then(v => {
-        vrm = v;
+  loader.load("./oni.vrm", gltf => {
+    THREE.VRM.from(gltf).then(v => {
+      vrm = v;
 
-        vrm.scene.scale.set(modelScale, modelScale, modelScale);
-        vrm.scene.position.set(0, modelY, 0);
-        vrm.scene.rotation.y = Math.PI;
+      vrm.scene.position.set(0, 0, 0); // 🚨 DO NOT TOUCH Y
+      vrm.scene.rotation.y = Math.PI;
+      vrm.scene.scale.set(1, 1, 1);
 
-        scene.add(vrm.scene);
-      });
-    },
-    undefined,
-    err => console.error("VRM LOAD ERROR", err)
-  );
+      scene.add(vrm.scene);
+    });
+  });
 
   animate();
 }
@@ -179,43 +144,16 @@ function animate() {
   requestAnimationFrame(animate);
   const delta = clock.getDelta();
   if (vrm) {
-    blink(vrm, delta);
-    idleSway(vrm, delta);
+    blink(delta);
+    idleMotion();
+    vrm.update(delta);
   }
-  if (renderer && scene && camera) renderer.render(scene, camera);
+  renderer.render(scene, camera);
 }
 
 window.addEventListener("load", initVRM);
 
-/* ===== GREETING ===== */
+/* ================= GREETING ================= */
 if (history.length === 0) {
-  append("waifu", "*looks at you* Hey… I was waiting 💗");
+  append("waifu", "*smiles softly* Hey… I was waiting 💗");
 }
-
-/* ===== SETTINGS ===== */
-const settingsBtn = document.getElementById("settings-btn");
-const settingsPanel = document.getElementById("settings-panel");
-const closeSettings = document.getElementById("close-settings");
-const memoryToggle = document.getElementById("memory-toggle");
-const personalitySelect = document.getElementById("personality-select");
-
-let memoryEnabled = localStorage.getItem("memory") !== "off";
-memoryToggle.checked = memoryEnabled;
-
-settingsBtn.onclick = () => settingsPanel.classList.toggle("hidden");
-closeSettings.onclick = () => settingsPanel.classList.add("hidden");
-
-memoryToggle.onchange = () => {
-  memoryEnabled = memoryToggle.checked;
-  localStorage.setItem("memory", memoryEnabled ? "on" : "off");
-
-  if (!memoryEnabled) {
-    history = [];
-    localStorage.removeItem("waifu_history");
-    append("waifu", "*nods* I won’t remember past messages now.");
-  } else {
-    append("waifu", "*smiles* I’ll remember our chats again.");
-  }
-};
-
-personalitySelect.onchange = () => changeMode(personalitySelect.value);
