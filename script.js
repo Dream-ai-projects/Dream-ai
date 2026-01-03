@@ -22,16 +22,13 @@ async function sendMsg() {
   const msg = input.value.trim();
   if (!msg) return;
 
-  // show user message
   append("user", msg);
   input.value = "";
-  input.blur(); // mobile fix
+  input.blur();
 
-  // save user msg
   history.push({ role: "user", content: msg });
   localStorage.setItem("waifu_history", JSON.stringify(history));
 
-  // typing indicator
   const typing = document.createElement("p");
   typing.className = "waifu";
   typing.innerHTML = "<i>Typing…</i>";
@@ -55,7 +52,6 @@ async function sendMsg() {
 
     history.push({ role: "assistant", content: reply });
     localStorage.setItem("waifu_history", JSON.stringify(history));
-
   } catch (e) {
     typing.innerHTML = "<b>Waifu:</b> network issue 😿";
   }
@@ -72,7 +68,6 @@ input.addEventListener("keydown", e => {
 });
 
 /* ===== PERSONALITY MODE (SETTINGS READY) ===== */
-/* call changeMode("girlfriend" | "waifu" | "horny") */
 async function changeMode(mode) {
   try {
     await fetch("https://dream-ai-backend-kkkk.onrender.com/mode", {
@@ -84,14 +79,14 @@ async function changeMode(mode) {
     history = [];
     localStorage.removeItem("waifu_history");
     append("waifu", `*smiles softly* I’ll act as your ${mode} now~`);
-
   } catch {
-    append("waifu", "*tilts head* couldn’t change mode…");
+    append("waifu", "tilts head couldn’t change mode…");
   }
 }
 
 /* ===== VRM ===== */
 let scene, camera, renderer, vrm;
+const clock = new THREE.Clock();
 
 function initVRM() {
   const canvas = document.getElementById("vrm-canvas");
@@ -144,7 +139,7 @@ function initVRM() {
 
 function animate() {
   requestAnimationFrame(animate);
-  if (vrm) vrm.update(0.016);
+  if (vrm) vrm.update(clock.getDelta());
   if (renderer && scene && camera) {
     renderer.render(scene, camera);
   }
@@ -154,5 +149,41 @@ window.addEventListener("load", initVRM);
 
 /* ===== GREETING ===== */
 if (history.length === 0) {
-  append("waifu", "*looks at you* Hey… I was waiting 💗");
+  append("waifu", "looks at you Hey… I was waiting 💗");
 }
+
+/* ===== SETTINGS ===== */
+const settingsBtn = document.getElementById("settings-btn");
+const settingsPanel = document.getElementById("settings-panel");
+const closeSettings = document.getElementById("close-settings");
+
+const memoryToggle = document.getElementById("memory-toggle");
+const personalitySelect = document.getElementById("personality-select");
+
+let memoryEnabled = localStorage.getItem("memory") !== "off";
+memoryToggle.checked = memoryEnabled;
+
+settingsBtn.onclick = () => {
+  settingsPanel.classList.toggle("hidden");
+};
+
+closeSettings.onclick = () => {
+  settingsPanel.classList.add("hidden");
+};
+
+memoryToggle.onchange = () => {
+  memoryEnabled = memoryToggle.checked;
+  localStorage.setItem("memory", memoryEnabled ? "on" : "off");
+
+  if (!memoryEnabled) {
+    history = [];
+    localStorage.removeItem("waifu_history");
+    append("waifu", "nods I won’t remember past messages now.");
+  } else {
+    append("waifu", "smiles I’ll remember our chats again.");
+  }
+};
+
+personalitySelect.onchange = () => {
+  changeMode(personalitySelect.value);
+};
