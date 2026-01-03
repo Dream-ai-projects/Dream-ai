@@ -66,7 +66,7 @@ input.addEventListener("keydown", e => {
   }
 });
 
-/* ===== PERSONALITY MODE (SETTINGS READY) ===== */
+/* ===== PERSONALITY MODE ===== */
 async function changeMode(mode) {
   try {
     await fetch("https://dream-ai-backend-kkkk.onrender.com/mode", {
@@ -79,20 +79,21 @@ async function changeMode(mode) {
     localStorage.removeItem("waifu_history");
     append("waifu", `*smiles softly* I’ll act as your ${mode} now~`);
   } catch {
-    append("waifu", "tilts head couldn’t change mode…");
+    append("waifu", "*tilts head* couldn’t change mode…");
   }
 }
 
 /* ===== VRM ===== */
 let scene, camera, renderer, vrm;
 const clock = new THREE.Clock();
+let initialY = 1.2;
 
-// Eye blink helper
+/* ==== Eye blink ==== */
 let blinkTimer = 0;
 function blink(vrm, delta) {
   if (!vrm) return;
   blinkTimer += delta;
-  if (blinkTimer > 4) { // blink every ~4 seconds
+  if (blinkTimer > 4) { // every ~4s
     vrm.blendShapeProxy?.setValue(THREE.VRM.BlendShapePresetName.Blink, 1);
     setTimeout(() => {
       vrm.blendShapeProxy?.setValue(THREE.VRM.BlendShapePresetName.Blink, 0);
@@ -101,37 +102,35 @@ function blink(vrm, delta) {
   }
 }
 
-// Subtle idle sway & small arm relax
+/* ==== Idle sway & subtle arms ==== */
 function idleSway(vrm, delta) {
   if (!vrm || !vrm.scene) return;
   const time = Date.now() / 1000;
+
+  // small sway/bob
   const sway = Math.sin(time) * 0.01;
   const bob = Math.sin(time / 1.2) * 0.005;
 
   vrm.scene.rotation.y = Math.PI + sway;
-  vrm.scene.position.y = bob + 1.2;
+  vrm.scene.position.y = initialY + bob;
 
-  // relax arms slightly
+  // slight arm relax
   const leftArm = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.LeftUpperArm);
   const rightArm = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.RightUpperArm);
   if (leftArm) leftArm.rotation.x = Math.sin(time) * 0.05 - 0.2;
   if (rightArm) rightArm.rotation.x = Math.sin(time + 1) * 0.05 - 0.2;
 }
 
+/* ==== Init VRM ==== */
 function initVRM() {
   const canvas = document.getElementById("vrm-canvas");
   if (!canvas || !window.THREE) return;
 
   scene = new THREE.Scene();
-
   camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
   camera.position.set(0, 1.4, 2.2);
 
-  renderer = new THREE.WebGLRenderer({
-    canvas,
-    alpha: true,
-    antialias: true
-  });
+  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setClearColor(0x000000, 0);
 
   function resize() {
@@ -155,11 +154,9 @@ function initVRM() {
     gltf => {
       THREE.VRM.from(gltf).then(v => {
         vrm = v;
-
         vrm.scene.scale.set(1, 1, 1);
-        vrm.scene.position.set(0, 1.2, 0);
+        vrm.scene.position.set(0, initialY, 0);
         vrm.scene.rotation.y = Math.PI;
-
         scene.add(vrm.scene);
       });
     },
@@ -170,6 +167,7 @@ function initVRM() {
   animate();
 }
 
+/* ==== Animate ==== */
 function animate() {
   requestAnimationFrame(animate);
   const delta = clock.getDelta();
