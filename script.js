@@ -99,8 +99,8 @@ function initVRM() {
   scene = new THREE.Scene();
 
   camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-  camera.position.set(0, 1.35, 2.4); // 🔥 FIX
-  camera.lookAt(0, 1.35, 0);         // 🔥 FIX
+  camera.position.set(0, 2.0, 2.8); // 🔥 FIX
+  camera.lookAt(0, 1.6, 0);         // 🔥 FIX
 
   renderer = new THREE.WebGLRenderer({
     canvas,
