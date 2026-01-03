@@ -39,7 +39,10 @@ async function sendMsg() {
     const res = await fetch(BACKEND_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: msg, history })
+      body: JSON.stringify({
+        message: msg,
+        history: history
+      })
     });
 
     const data = await res.json();
@@ -63,7 +66,7 @@ input.addEventListener("keydown", e => {
   }
 });
 
-/* ===== PERSONALITY MODE ===== */
+/* ===== PERSONALITY MODE (SETTINGS READY) ===== */
 async function changeMode(mode) {
   try {
     await fetch("https://dream-ai-backend-kkkk.onrender.com/mode", {
@@ -76,49 +79,43 @@ async function changeMode(mode) {
     localStorage.removeItem("waifu_history");
     append("waifu", `*smiles softly* I’ll act as your ${mode} now~`);
   } catch {
-    append("waifu", "*tilts head* couldn’t change mode…");
+    append("waifu", "tilts head couldn’t change mode…");
   }
 }
 
-/* ===== VRM & ANIMATION ===== */
+/* ===== VRM ===== */
 let scene, camera, renderer, vrm;
 const clock = new THREE.Clock();
 
-// BLINK TIMER
-let blinkTime = 0;
-function blinkAnimation(vrm, delta) {
-  if (!vrm || !vrm.blendShapeProxy) return;
-  blinkTime += delta;
-  if (blinkTime > 4) {
-    vrm.blendShapeProxy.setValue(THREE.VRM.BlendShapePresetName.Blink, 1);
+// Eye blink helper
+let blinkTimer = 0;
+function blink(vrm, delta) {
+  if (!vrm) return;
+  blinkTimer += delta;
+  if (blinkTimer > 4) { // blink every ~4 seconds
+    vrm.blendShapeProxy?.setValue(THREE.VRM.BlendShapePresetName.Blink, 1);
     setTimeout(() => {
-      if (vrm) vrm.blendShapeProxy.setValue(THREE.VRM.BlendShapePresetName.Blink, 0);
+      vrm.blendShapeProxy?.setValue(THREE.VRM.BlendShapePresetName.Blink, 0);
     }, 150);
-    blinkTime = 0;
+    blinkTimer = 0;
   }
 }
 
-// RELAX ARMS
-function relaxArms(vrm) {
-  if (!vrm.humanoid) return;
-
-  const leftUpperArm = vrm.humanoid.getBoneNode("leftUpperArm");
-  const rightUpperArm = vrm.humanoid.getBoneNode("rightUpperArm");
-  const leftLowerArm = vrm.humanoid.getBoneNode("leftLowerArm");
-  const rightLowerArm = vrm.humanoid.getBoneNode("rightLowerArm");
-
-  if (leftUpperArm) leftUpperArm.rotation.z = 0.25;
-  if (rightUpperArm) rightUpperArm.rotation.z = -0.25;
-  if (leftLowerArm) leftLowerArm.rotation.x = -0.15;
-  if (rightLowerArm) rightLowerArm.rotation.x = -0.15;
-}
-
-// IDLE SWAY
+// Subtle idle sway & small arm relax
 function idleSway(vrm, delta) {
   if (!vrm || !vrm.scene) return;
-  const sway = Math.sin(Date.now() / 800) * 0.01; // subtle sway
+  const time = Date.now() / 1000;
+  const sway = Math.sin(time) * 0.01;
+  const bob = Math.sin(time / 1.2) * 0.005;
+
   vrm.scene.rotation.y = Math.PI + sway;
-  vrm.scene.position.y = sway * 0.5; // tiny vertical float
+  vrm.scene.position.y = bob + 1.2;
+
+  // relax arms slightly
+  const leftArm = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.LeftUpperArm);
+  const rightArm = vrm.humanoid?.getBoneNode(THREE.VRMSchema.HumanoidBoneName.RightUpperArm);
+  if (leftArm) leftArm.rotation.x = Math.sin(time) * 0.05 - 0.2;
+  if (rightArm) rightArm.rotation.x = Math.sin(time + 1) * 0.05 - 0.2;
 }
 
 function initVRM() {
@@ -126,10 +123,15 @@ function initVRM() {
   if (!canvas || !window.THREE) return;
 
   scene = new THREE.Scene();
+
   camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
   camera.position.set(0, 1.4, 2.2);
 
-  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    alpha: true,
+    antialias: true
+  });
   renderer.setClearColor(0x000000, 0);
 
   function resize() {
@@ -153,13 +155,12 @@ function initVRM() {
     gltf => {
       THREE.VRM.from(gltf).then(v => {
         vrm = v;
-        vrm.scene.rotation.y = Math.PI;
-        vrm.scene.position.set(0, 0, 0);
-        vrm.scene.scale.set(1, 1, 1);
-        scene.add(vrm.scene);
 
-        // APPLY RELAXED ARMS
-        relaxArms(vrm);
+        vrm.scene.scale.set(1, 1, 1);
+        vrm.scene.position.set(0, 1.2, 0);
+        vrm.scene.rotation.y = Math.PI;
+
+        scene.add(vrm.scene);
       });
     },
     undefined,
@@ -172,13 +173,10 @@ function initVRM() {
 function animate() {
   requestAnimationFrame(animate);
   const delta = clock.getDelta();
-
   if (vrm) {
-    vrm.update(Math.min(delta, 0.016));
-    blinkAnimation(vrm, delta);
+    blink(vrm, delta);
     idleSway(vrm, delta);
   }
-
   if (renderer && scene && camera) {
     renderer.render(scene, camera);
   }
@@ -204,7 +202,6 @@ memoryToggle.checked = memoryEnabled;
 settingsBtn.onclick = () => settingsPanel.classList.toggle("hidden");
 closeSettings.onclick = () => settingsPanel.classList.add("hidden");
 
-// MEMORY TOGGLE
 memoryToggle.onchange = () => {
   memoryEnabled = memoryToggle.checked;
   localStorage.setItem("memory", memoryEnabled ? "on" : "off");
@@ -218,5 +215,4 @@ memoryToggle.onchange = () => {
   }
 };
 
-// PERSONALITY CHANGE
 personalitySelect.onchange = () => changeMode(personalitySelect.value);
