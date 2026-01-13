@@ -2,9 +2,11 @@ const BACKEND_URL = "https://dream-ai-backend-kkkk.onrender.com/chat";
 
 /* ================= CHAT ================= */
 let history = [];
+let currentMood = "idle";
 
 const chat = document.getElementById("chat");
 const input = document.getElementById("msg");
+const sendBtn = document.getElementById("send-btn");
 
 function append(role, text) {
   const p = document.createElement("p");
@@ -14,6 +16,17 @@ function append(role, text) {
   chat.scrollTop = chat.scrollHeight;
 }
 
+/* ===== MOOD DETECTOR ===== */
+function detectMood(text) {
+  const t = text.toLowerCase();
+  if (/love|yay|hehe|happy|cute/.test(t)) return "happy";
+  if (/shy|blush|umm|embarrass/.test(t)) return "shy";
+  if (/angry|mad|annoyed|huh/.test(t)) return "angry";
+  if (/sad|miss|lonely|sorry/.test(t)) return "sad";
+  return "idle";
+}
+
+/* ===== SEND MESSAGE ===== */
 async function sendMsg() {
   const msg = input.value.trim();
   if (!msg) return;
@@ -26,12 +39,16 @@ async function sendMsg() {
   typing.className = "waifu";
   typing.innerHTML = "<i>Typing…</i>";
   chat.appendChild(typing);
+  chat.scrollTop = chat.scrollHeight;
 
   try {
     const res = await fetch(BACKEND_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: msg, history })
+      body: JSON.stringify({
+        history,
+        mode: "girlfriend"
+      })
     });
 
     const data = await res.json();
@@ -40,19 +57,25 @@ async function sendMsg() {
     typing.innerHTML = `<b>Waifu:</b> ${reply}`;
     history.push({ role: "assistant", content: reply });
 
+    // 🎭 detect mood from reply
+    currentMood = detectMood(reply);
+
   } catch {
-    typing.innerHTML = "<b>Waifu:</b> Backend error";
+    typing.innerHTML = "<b>Waifu:</b> network issue 😿";
   }
 }
 
-document.getElementById("send-btn").addEventListener("click", sendMsg);
+sendBtn.addEventListener("click", sendMsg);
 input.addEventListener("keydown", e => {
-  if (e.key === "Enter") sendMsg();
+  if (e.key === "Enter") {
+    e.preventDefault();
+    sendMsg();
+  }
 });
 
 /* ================= VRM ================= */
 let scene, camera, renderer, vrm;
-let clock = new THREE.Clock();
+const clock = new THREE.Clock();
 
 function initVRM() {
   const canvas = document.getElementById("vrm-canvas");
@@ -60,7 +83,7 @@ function initVRM() {
   scene = new THREE.Scene();
 
   camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-  camera.position.set(0, 1.45, 2.1); // PERFECT BODY FRAME
+  camera.position.set(0, 1.45, 2.2); // PERFECT framing
 
   renderer = new THREE.WebGLRenderer({
     canvas,
@@ -68,23 +91,20 @@ function initVRM() {
     antialias: true
   });
 
-  // 🔥 SHARPNESS FIX (GOODBYE 360p)
-  const dpr = Math.min(window.devicePixelRatio, 2);
-  renderer.setPixelRatio(dpr);
+  // 🔥 sharp rendering (no 360p)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   function resize() {
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    renderer.setSize(w, h);
+    const w = canvas.clientWidth || 300;
+    const h = canvas.clientHeight || 400;
+    renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   }
-
   resize();
   window.addEventListener("resize", resize);
 
   scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-
   const light = new THREE.DirectionalLight(0xffffff, 1);
   light.position.set(1, 2, 3);
   scene.add(light);
@@ -96,7 +116,7 @@ function initVRM() {
       THREE.VRM.from(gltf).then(v => {
         vrm = v;
 
-        // ❗ LOCK POSITION – NO MORE FALLING
+        // ❗ HARD LOCK POSITION (NO FALLING)
         vrm.scene.position.set(0, 0, 0);
         vrm.scene.rotation.y = Math.PI;
 
@@ -116,35 +136,74 @@ function animate() {
   const delta = clock.getDelta();
   const t = clock.elapsedTime;
 
-  if (vrm) {
-    vrm.update(delta);
+  if (!vrm) return;
+  vrm.update(delta);
 
-    const humanoid = vrm.humanoid;
+  const h = vrm.humanoid;
+  if (!h) return;
 
-    // 💓 IDLE BODY MOTION (NO FLOATING)
-    const spine = humanoid.getBoneNode("spine");
-    const chest = humanoid.getBoneNode("chest");
+  const spine = h.getBoneNode("spine");
+  const chest = h.getBoneNode("chest");
+  const head = h.getBoneNode("head");
+  const lArm = h.getBoneNode("leftUpperArm");
+  const rArm = h.getBoneNode("rightUpperArm");
 
-    if (spine && chest) {
-      spine.rotation.y = Math.sin(t * 0.5) * 0.05;
-      chest.rotation.x = Math.sin(t * 0.7) * 0.04;
-    }
+  // RESET every frame (kills T-pose stiffness)
+  [spine, chest, head, lArm, rArm].forEach(b => {
+    if (b) b.rotation.set(0, 0, 0);
+  });
 
-    // ✋ RELAX ARMS (GOODBYE MANNEQUIN)
-    const lArm = humanoid.getBoneNode("leftUpperArm");
-    const rArm = humanoid.getBoneNode("rightUpperArm");
+  /* ===== MOOD ANIMATIONS ===== */
 
-    if (lArm && rArm) {
-      lArm.rotation.z = Math.sin(t * 0.8) * 0.1 - 0.3;
-      rArm.rotation.z = -Math.sin(t * 0.8) * 0.1 + 0.3;
-    }
-
-    // 👀 BLINKING (HOT BUT SAFE)
-    const blink = (Math.sin(t * 3) + 1) / 2;
-    vrm.expressionManager.setValue("blink", blink > 0.96 ? 1 : 0);
+  // IDLE
+  if (currentMood === "idle") {
+    chest.rotation.x = Math.sin(t * 0.8) * 0.04;
+    spine.rotation.y = Math.sin(t * 0.5) * 0.03;
   }
+
+  // HAPPY
+  if (currentMood === "happy") {
+    chest.rotation.x = Math.sin(t * 2) * 0.1;
+    lArm.rotation.z = -0.6;
+    rArm.rotation.z = 0.6;
+  }
+
+  // SHY
+  if (currentMood === "shy") {
+    head.rotation.x = 0.25;
+    head.rotation.y = Math.sin(t) * 0.15;
+    lArm.rotation.z = -0.3;
+    rArm.rotation.z = 0.3;
+  }
+
+  // ANGRY
+  if (currentMood === "angry") {
+    spine.rotation.x = -0.15;
+    lArm.rotation.x = -0.6;
+    rArm.rotation.x = -0.6;
+  }
+
+  // SAD
+  if (currentMood === "sad") {
+    head.rotation.x = 0.35;
+    chest.rotation.x = -0.1;
+  }
+
+  // 👀 blinking
+  vrm.expressionManager.setValue(
+    "blink",
+    Math.sin(t * 3) > 0.97 ? 1 : 0
+  );
 
   renderer.render(scene, camera);
 }
 
 window.addEventListener("load", initVRM);
+
+/* ===== MIC PLACEHOLDER ===== */
+document.getElementById("mic-btn").onclick = () => {
+  append("waifu", "*giggles* voice soon~");
+};
+
+/* ===== GREETING ===== */
+append("waifu", "*smiles softly* Hi… I’m here 💗");
