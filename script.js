@@ -1,18 +1,15 @@
 /* ================= STATE ================= */
-// ✅ KEPT YOUR ORIGINAL URL
 const BACKEND_URL = "https://dream-ai-backend-kkkk.onrender.com/chat"; 
 let history = [];
 let personality = "girlfriend";
 let memoryEnabled = true;
 
-// 🔥 NEW: Animation State
+// Current Mood State
 let currentMood = "neutral";
-let bones = { neck: null, head: null, leftArm: null, rightArm: null, spine: null };
 
-/* ================= DOM SAFE ================= */
+/* ================= DOM EVENTS ================= */
 window.addEventListener("DOMContentLoaded", () => {
   
-  /* ===== CHAT ===== */
   const chat = document.getElementById("chat");
   const input = document.getElementById("msg");
   const sendBtn = document.getElementById("send-btn");
@@ -32,11 +29,9 @@ window.addEventListener("DOMContentLoaded", () => {
     append("user", msg);
     input.value = "";
 
-    if (memoryEnabled) {
-      history.push({ role: "user", content: msg });
-    } else {
-      history = [{ role: "user", content: msg }];
-    }
+    // Add to history
+    if (memoryEnabled) history.push({ role: "user", content: msg });
+    else history = [{ role: "user", content: msg }];
 
     const typing = document.createElement("p");
     typing.className = "waifu";
@@ -47,19 +42,16 @@ window.addEventListener("DOMContentLoaded", () => {
       const res = await fetch(BACKEND_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          history,
-          mode: personality
-        })
+        body: JSON.stringify({ history, mode: personality })
       });
 
       const data = await res.json();
       const reply = data.reply || "...";
-
-      // 🔥 NEW: UPDATE CHARACTER MOOD
+      
+      // 🔥 UPDATE MOOD HERE
       if (data.mood) {
-        currentMood = data.mood;
-        console.log("Mood set to:", currentMood);
+        console.log("Switching mood to:", data.mood);
+        currentMood = data.mood; 
       }
 
       typing.innerHTML = `<b>Waifu:</b> ${reply}`;
@@ -75,114 +67,113 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   sendBtn.onclick = sendMsg;
-  input.onkeydown = e => {
-    if (e.key === "Enter") sendMsg();
-  };
+  input.onkeydown = e => { if (e.key === "Enter") sendMsg(); };
 
-  /* ===== SETTINGS ===== */
-  const settingsBtn = document.getElementById("settings-btn");
-  const settingsPanel = document.getElementById("settings-panel");
-  const closeSettings = document.getElementById("close-settings");
-  const personalitySelect = document.getElementById("personality-select");
-  const memoryToggle = document.getElementById("memory-toggle");
+  /* SETTINGS HANDLERS */
+  document.getElementById("settings-btn").onclick = () => 
+    document.getElementById("settings-panel").classList.toggle("hidden");
+  document.getElementById("close-settings").onclick = () => 
+    document.getElementById("settings-panel").classList.add("hidden");
+  document.getElementById("personality-select").onchange = e => personality = e.target.value;
+  document.getElementById("memory-toggle").onchange = e => memoryEnabled = e.target.checked;
 
-  settingsBtn.onclick = () => {
-    settingsPanel.classList.toggle("hidden");
-  };
-
-  closeSettings.onclick = () => {
-    settingsPanel.classList.add("hidden");
-  };
-
-  personalitySelect.onchange = e => {
-    personality = e.target.value;
-  };
-
-  memoryToggle.onchange = e => {
-    memoryEnabled = e.target.checked;
-  };
-
-  /* ===== VRM ===== */
+  /* START 3D */
   initVRM();
 });
 
-/* ================= VRM & ANIMATION ================= */
+/* ================= 3D & ANIMATION ENGINE ================= */
 let scene, camera, renderer, vrm;
 const clock = new THREE.Clock();
 
-// 🔥 NEW: Mood Configuration
-const MOOD_CONFIG = {
-  neutral: { arm: 70, tilt: 0, express: "neutral" },
-  happy:   { arm: 50, tilt: -0.1, express: "joy" },
-  excited: { arm: 30, tilt: -0.2, express: "fun" },
-  shy:     { arm: 80, tilt: 0.2, express: "sorrow" }
+// Bone References
+let bones = {
+  neck: null,
+  head: null,
+  leftArm: null,
+  rightArm: null,
+  spine: null
+};
+
+// Animation Config
+const MOODS = {
+  neutral: {
+    armRotation: 75, // degrees down
+    headTilt: 0,
+    blinkSpeed: 3,
+    expression: "neutral"
+  },
+  happy: {
+    armRotation: 60, // arms slightly wider
+    headTilt: -0.1,  // slight tilt
+    blinkSpeed: 5,
+    expression: "fun"
+  },
+  excited: {
+    armRotation: 45, // arms open
+    headTilt: -0.2,
+    blinkSpeed: 8,
+    expression: "joy"
+  },
+  shy: {
+    armRotation: 80, // arms tight to body
+    headTilt: 0.2,   // looking down/away
+    blinkSpeed: 2,
+    expression: "sorrow" // usually looks shy/sad
+  }
 };
 
 function initVRM() {
   const canvas = document.getElementById("vrm-canvas");
 
   scene = new THREE.Scene();
-
-  camera = new THREE.PerspectiveCamera(30, canvas.clientWidth / canvas.clientHeight, 0.1, 20);
-  camera.position.set(0, 1.4, 1.5); 
   
-  renderer = new THREE.WebGLRenderer({
-    canvas,
-    alpha: true,
-    antialias: true
-  });
+  // Camera Setup
+  camera = new THREE.PerspectiveCamera(30, canvas.clientWidth / canvas.clientHeight, 0.1, 20);
+  camera.position.set(0, 1.4, 1.45); // Eye level
+  
+  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
 
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-  renderer.setClearColor(0x000000, 0);
-
-  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-  const light = new THREE.DirectionalLight(0xffffff, 1.0);
-  light.position.set(1, 1, 1);
+  // Lighting
+  const light = new THREE.DirectionalLight(0xffffff, 1.1);
+  light.position.set(1, 1, 1).normalize();
   scene.add(light);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
-  window.addEventListener("resize", () => {
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-  });
-
+  // Load Model
   const loader = new THREE.GLTFLoader();
   loader.crossOrigin = "anonymous";
+  loader.load("./oni.vrm", (gltf) => {
+    THREE.VRM.from(gltf).then((v) => {
+      vrm = v;
+      scene.add(vrm.scene);
 
-  loader.load(
-    "./oni.vrm",
-    gltf => {
-      THREE.VRM.from(gltf).then(v => {
-        vrm = v;
-        
-        vrm.scene.traverse(obj => { obj.frustumCulled = false; });
-        
-        // 🔥 FIX: Stop spinning, face front
-        vrm.scene.position.set(0, 0, 0);
-        vrm.scene.rotation.y = Math.PI; 
+      // 🔥 STOP ROTATION: Face forward
+      vrm.scene.rotation.y = Math.PI; 
 
-        // 🔥 FIX: Grab bones for animation
-        bones.neck = vrm.humanoid.getBoneNode("neck");
-        bones.head = vrm.humanoid.getBoneNode("head");
-        bones.spine = vrm.humanoid.getBoneNode("spine");
-        bones.leftArm = vrm.humanoid.getBoneNode("leftUpperArm");
-        bones.rightArm = vrm.humanoid.getBoneNode("rightUpperArm");
+      // Get Bones
+      bones.neck = vrm.humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName.Neck);
+      bones.head = vrm.humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName.Head);
+      bones.leftArm = vrm.humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName.LeftUpperArm);
+      bones.rightArm = vrm.humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName.RightUpperArm);
+      bones.spine = vrm.humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName.Spine);
 
-        // 🔥 FIX: Instant Arm Reset (No T-Pose)
-        if(bones.leftArm) bones.leftArm.rotation.z = 1.2; 
-        if(bones.rightArm) bones.rightArm.rotation.z = -1.2;
-
-        scene.add(vrm.scene);
-      });
-    },
-    undefined,
-    (err) => console.error("❌ VRM LOAD ERROR", err)
-  );
+      // Initial Un-T-Pose
+      resetPose();
+      
+      console.log("VRM Loaded & Animated");
+    });
+  });
 
   animate();
+}
+
+function resetPose() {
+  if(!bones.leftArm) return;
+  // Force arms down immediately so we don't see T-pose
+  bones.leftArm.rotation.z = Math.PI / 2.5; 
+  bones.rightArm.rotation.z = -Math.PI / 2.5;
 }
 
 function animate() {
@@ -194,33 +185,60 @@ function animate() {
   if (vrm) {
     vrm.update(delta);
 
-    // --- ANIMATION LOGIC ---
-    const activeMood = MOOD_CONFIG[currentMood] || MOOD_CONFIG.neutral;
+    // --- PROCEDURAL ANIMATION SYSTEM --- //
     
-    // 1. Breathing (Sine wave on spine)
-    if (bones.spine) bones.spine.rotation.x = Math.sin(t * 1.5) * 0.03;
+    // 1. Get Target Mood
+    const target = MOODS[currentMood] || MOODS.neutral;
+    const rad = Math.PI / 180;
 
-    // 2. Arms (Smoothly move to mood position)
-    if (bones.leftArm) {
-      const targetZ = activeMood.arm * (Math.PI / 180);
-      bones.leftArm.rotation.z += (targetZ - bones.leftArm.rotation.z) * 0.05;
+    // 2. Breathing (Sine Wave on Spine & Neck)
+    // We keep this always running to make her look alive
+    const breath = Math.sin(t * 1.5); 
+    if (bones.spine) bones.spine.rotation.x = breath * 0.03; 
+    if (bones.neck) bones.neck.rotation.x = breath * 0.03; 
+
+    // 3. Smooth Arm Movement (Interpolation)
+    if (bones.leftArm && bones.rightArm) {
+      // Lerp current rotation to target rotation
+      // Arms Z-axis: Positive is Down for Left, Negative is Down for Right
+      const currentL = bones.leftArm.rotation.z;
+      const targetL = target.armRotation * rad;
+      
+      bones.leftArm.rotation.z += (targetL - currentL) * 0.05; // 0.05 is speed
       bones.rightArm.rotation.z = -bones.leftArm.rotation.z;
     }
 
-    // 3. Head Tilt
+    // 4. Head Tilt (Mood based)
     if (bones.head) {
-      bones.head.rotation.z += (activeMood.tilt - bones.head.rotation.z) * 0.05;
-      bones.head.rotation.y = Math.sin(t * 0.5) * 0.05; // Idle Sway
+        // Mix breathing movement + mood tilt
+        const currentTilt = bones.head.rotation.z;
+        const targetTilt = target.headTilt;
+        bones.head.rotation.z += (targetTilt - currentTilt) * 0.05;
+        
+        // Subtle idle sway
+        bones.head.rotation.y = Math.sin(t * 0.5) * 0.05; 
     }
 
-    // 4. Face Expressions
-    ["joy", "sorrow", "fun"].forEach(e => vrm.blendShapeProxy.setValue(e, 0)); // Reset
-    if (activeMood.express !== "neutral") {
-      vrm.blendShapeProxy.setValue(activeMood.express, 1);
-    }
+    // 5. Facial Expressions (BlendShapes)
+    // Reset all emotions first (simplified)
+    vrm.blendShapeProxy.setValue(THREE.VRMSchema.BlendShapePresetName.Joy, 0);
+    vrm.blendShapeProxy.setValue(THREE.VRMSchema.BlendShapePresetName.Sorrow, 0);
+    vrm.blendShapeProxy.setValue(THREE.VRMSchema.BlendShapePresetName.Fun, 0);
 
-    // 5. Blinking
-    vrm.blendShapeProxy.setValue("blink", Math.sin(t * 3) > 0.98 ? 1 : 0);
+    // Apply current mood expression
+    if(target.expression === "joy") 
+        vrm.blendShapeProxy.setValue(THREE.VRMSchema.BlendShapePresetName.Joy, 1);
+    else if(target.expression === "sorrow") 
+        vrm.blendShapeProxy.setValue(THREE.VRMSchema.BlendShapePresetName.Sorrow, 1);
+    else if(target.expression === "fun") 
+        vrm.blendShapeProxy.setValue(THREE.VRMSchema.BlendShapePresetName.Fun, 1);
+
+    // 6. Blinking
+    const blinkVal = Math.sin(t * target.blinkSpeed);
+    vrm.blendShapeProxy.setValue(
+      THREE.VRMSchema.BlendShapePresetName.Blink,
+      blinkVal > 0.95 ? 1 : 0 // Sharp blink
+    );
   }
 
   renderer.render(scene, camera);
