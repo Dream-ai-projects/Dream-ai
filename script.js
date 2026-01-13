@@ -5,10 +5,8 @@ let history = [];
 let personality = "girlfriend";
 let memoryEnabled = true;
 
-/* ================= DOM SAFE ================= */
+/* ================= CHAT + UI ================= */
 window.addEventListener("DOMContentLoaded", () => {
-
-  /* ===== CHAT ===== */
   const chat = document.getElementById("chat");
   const input = document.getElementById("msg");
   const sendBtn = document.getElementById("send-btn");
@@ -57,7 +55,6 @@ window.addEventListener("DOMContentLoaded", () => {
       if (memoryEnabled) {
         history.push({ role: "assistant", content: reply });
       }
-
     } catch (err) {
       typing.innerHTML = "<b>Waifu:</b> connection error 😿";
       console.error(err);
@@ -92,7 +89,7 @@ window.addEventListener("DOMContentLoaded", () => {
     memoryEnabled = e.target.checked;
   };
 
-  /* ===== VRM ===== */
+  /* ===== INIT VRM ONCE ===== */
   initVRM();
 });
 
@@ -105,8 +102,15 @@ function initVRM() {
 
   scene = new THREE.Scene();
 
-  camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-  camera.position.set(0, 1.4, 2.4);
+  const rect = canvas.getBoundingClientRect();
+  camera = new THREE.PerspectiveCamera(
+    30,
+    rect.width / rect.height,
+    0.1,
+    100
+  );
+
+  camera.position.set(0, 1.6, 3);
   camera.lookAt(0, 1.4, 0);
 
   renderer = new THREE.WebGLRenderer({
@@ -132,25 +136,23 @@ function initVRM() {
   loader.load(
     "./oni.vrm",
     gltf => {
-      THREE.VRM.from(gltf).then(v => {
-        vrm = v;
+      THREE.VRM.from(gltf)
+        .then(v => {
+          vrm = v;
 
-        // 🔥 IMPORTANT FIXES
-        vrm.scene.traverse(obj => {
-          obj.frustumCulled = false;
+          vrm.scene.traverse(obj => {
+            obj.frustumCulled = false;
+          });
+
+          vrm.scene.position.set(0, 0, 0);
+          vrm.scene.rotation.y = Math.PI;
+
+          scene.add(vrm.scene);
+          resize();
+        })
+        .catch(err => {
+          console.error("❌ VRM PARSE FAILED", err);
         });
-
-        vrm.scene.scale.set(1, 1, 1);
-
-        // 🔥 FIXED POSITION (NO MORE LEGS ONLY)
-        vrm.scene.position.set(0, 0.9, 0);
-        vrm.scene.rotation.y = Math.PI;
-
-        scene.add(vrm.scene);
-
-        // force resize AFTER load
-        resize();
-      });
     },
     undefined,
     err => {
@@ -162,6 +164,8 @@ function initVRM() {
 }
 
 function resize() {
+  if (!renderer || !camera) return;
+
   const canvas = renderer.domElement;
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
@@ -182,12 +186,11 @@ function animate() {
   if (vrm) {
     vrm.update(delta);
 
-    const head = vrm.humanoid?.getBoneNode("head");
+    const head = vrm.humanoid.getBoneNode("head");
     if (head) {
       head.rotation.y = Math.sin(t * 0.6) * 0.05;
     }
 
-    // blink
     if (vrm.blendShapeProxy) {
       vrm.blendShapeProxy.setValue(
         THREE.VRM.BlendShapePresetName.Blink,
@@ -198,5 +201,3 @@ function animate() {
 
   renderer.render(scene, camera);
 }
-
-window.addEventListener("DOMContentLoaded", initVRM);
