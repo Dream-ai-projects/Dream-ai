@@ -105,52 +105,98 @@ function initVRM() {
 
   scene = new THREE.Scene();
 
-  camera = new THREE.PerspectiveCamera(
-    30,
-    canvas.clientWidth / canvas.clientHeight,
-    0.1,
-    100
-  );
-  camera.position.set(0, 1.45, 2.2);
+  camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+  camera.position.set(0, 1.4, 2.4);
+  camera.lookAt(0, 1.4, 0);
 
-  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    alpha: true,
+    antialias: true
+  });
+
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-  const light = new THREE.DirectionalLight(0xffffff, 1);
+  scene.add(new THREE.AmbientLight(0xffffff, 1));
+  const light = new THREE.DirectionalLight(0xffffff, 1.2);
   light.position.set(1, 2, 3);
   scene.add(light);
 
+  resize();
+  window.addEventListener("resize", resize);
+
   const loader = new THREE.GLTFLoader();
-  loader.load("./oni.vrm", gltf => {
-    THREE.VRM.from(gltf).then(v => {
-      vrm = v;
-      vrm.scene.rotation.y = Math.PI;
-      scene.add(vrm.scene);
-    });
-  });
+  loader.crossOrigin = "anonymous";
+
+  loader.load(
+    "./oni.vrm",
+    gltf => {
+      THREE.VRM.from(gltf).then(v => {
+        vrm = v;
+
+        // 🔥 IMPORTANT FIXES
+        vrm.scene.traverse(obj => {
+          obj.frustumCulled = false;
+        });
+
+        vrm.scene.scale.set(1, 1, 1);
+
+        // 🔥 FIXED POSITION (NO MORE LEGS ONLY)
+        vrm.scene.position.set(0, 0.9, 0);
+        vrm.scene.rotation.y = Math.PI;
+
+        scene.add(vrm.scene);
+
+        // force resize AFTER load
+        resize();
+      });
+    },
+    undefined,
+    err => {
+      console.error("❌ VRM LOAD ERROR", err);
+    }
+  );
 
   animate();
 }
 
+function resize() {
+  const canvas = renderer.domElement;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+
+  if (w === 0 || h === 0) return;
+
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
 function animate() {
   requestAnimationFrame(animate);
+
   const delta = clock.getDelta();
   const t = clock.elapsedTime;
 
-  if (!vrm) return;
-  vrm.update(delta);
+  if (vrm) {
+    vrm.update(delta);
 
-  const head = vrm.humanoid?.getBoneNode("head");
-  if (head) head.rotation.y = Math.sin(t * 0.6) * 0.05;
+    const head = vrm.humanoid?.getBoneNode("head");
+    if (head) {
+      head.rotation.y = Math.sin(t * 0.6) * 0.05;
+    }
 
-  if (vrm.blendShapeProxy) {
-    vrm.blendShapeProxy.setValue(
-      THREE.VRM.BlendShapePresetName.Blink,
-      Math.sin(t * 3) > 0.98 ? 1 : 0
-    );
+    // blink
+    if (vrm.blendShapeProxy) {
+      vrm.blendShapeProxy.setValue(
+        THREE.VRM.BlendShapePresetName.Blink,
+        Math.sin(t * 3) > 0.98 ? 1 : 0
+      );
+    }
   }
 
   renderer.render(scene, camera);
 }
+
+window.addEventListener("DOMContentLoaded", initVRM);
