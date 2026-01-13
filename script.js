@@ -16,17 +16,7 @@ function append(role, text) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-/* ===== MOOD DETECTOR ===== */
-function detectMood(text) {
-  const t = text.toLowerCase();
-  if (/love|yay|hehe|happy|cute/.test(t)) return "happy";
-  if (/shy|blush|umm|embarrass/.test(t)) return "shy";
-  if (/angry|mad|annoyed|huh/.test(t)) return "angry";
-  if (/sad|miss|lonely|sorry/.test(t)) return "sad";
-  return "idle";
-}
-
-/* ===== SEND MESSAGE ===== */
+/* ================= SEND ================= */
 async function sendMsg() {
   const msg = input.value.trim();
   if (!msg) return;
@@ -39,16 +29,12 @@ async function sendMsg() {
   typing.className = "waifu";
   typing.innerHTML = "<i>Typing…</i>";
   chat.appendChild(typing);
-  chat.scrollTop = chat.scrollHeight;
 
   try {
     const res = await fetch(BACKEND_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        history,
-        mode: "girlfriend"
-      })
+      body: JSON.stringify({ message: msg, history })
     });
 
     const data = await res.json();
@@ -57,21 +43,18 @@ async function sendMsg() {
     typing.innerHTML = `<b>Waifu:</b> ${reply}`;
     history.push({ role: "assistant", content: reply });
 
-    // 🎭 detect mood from reply
-    currentMood = detectMood(reply);
-
   } catch {
     typing.innerHTML = "<b>Waifu:</b> network issue 😿";
   }
 }
 
-sendBtn.addEventListener("click", sendMsg);
-input.addEventListener("keydown", e => {
+sendBtn.onclick = sendMsg;
+input.onkeydown = e => {
   if (e.key === "Enter") {
     e.preventDefault();
     sendMsg();
   }
-});
+};
 
 /* ================= VRM ================= */
 let scene, camera, renderer, vrm;
@@ -83,7 +66,7 @@ function initVRM() {
   scene = new THREE.Scene();
 
   camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-  camera.position.set(0, 1.45, 2.2); // PERFECT framing
+  camera.position.set(0, 1.45, 2.2);
 
   renderer = new THREE.WebGLRenderer({
     canvas,
@@ -91,16 +74,16 @@ function initVRM() {
     antialias: true
   });
 
-  // 🔥 sharp rendering (no 360p)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   function resize() {
-    const w = canvas.clientWidth || 300;
-    const h = canvas.clientHeight || 400;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   }
+
   resize();
   window.addEventListener("resize", resize);
 
@@ -110,22 +93,18 @@ function initVRM() {
   scene.add(light);
 
   const loader = new THREE.GLTFLoader();
-  loader.load(
-    "./oni.vrm",
-    gltf => {
-      THREE.VRM.from(gltf).then(v => {
-        vrm = v;
+  loader.load("./oni.vrm", gltf => {
+    THREE.VRM.from(gltf).then(v => {
+      vrm = v;
 
-        // ❗ HARD LOCK POSITION (NO FALLING)
-        vrm.scene.position.set(0, 0, 0);
-        vrm.scene.rotation.y = Math.PI;
+      THREE.VRMUtils.removeUnnecessaryJoints(vrm.scene);
 
-        scene.add(vrm.scene);
-      });
-    },
-    undefined,
-    err => console.error("VRM LOAD ERROR", err)
-  );
+      vrm.scene.position.set(0, 0, 0);
+      vrm.scene.rotation.y = Math.PI;
+
+      scene.add(vrm.scene);
+    });
+  });
 
   animate();
 }
@@ -145,65 +124,33 @@ function animate() {
   const spine = h.getBoneNode("spine");
   const chest = h.getBoneNode("chest");
   const head = h.getBoneNode("head");
-  const lArm = h.getBoneNode("leftUpperArm");
-  const rArm = h.getBoneNode("rightUpperArm");
 
-  // RESET every frame (kills T-pose stiffness)
-  [spine, chest, head, lArm, rArm].forEach(b => {
-    if (b) b.rotation.set(0, 0, 0);
-  });
+  if (spine) spine.rotation.y = Math.sin(t * 0.5) * 0.03;
+  if (chest) chest.rotation.x = Math.sin(t * 0.8) * 0.04;
+  if (head) head.rotation.y = Math.sin(t * 0.6) * 0.05;
 
-  /* ===== MOOD ANIMATIONS ===== */
-
-  // IDLE
-  if (currentMood === "idle") {
-    chest.rotation.x = Math.sin(t * 0.8) * 0.04;
-    spine.rotation.y = Math.sin(t * 0.5) * 0.03;
+  // blink (VRM 0.6 compatible)
+  if (vrm.blendShapeProxy) {
+    vrm.blendShapeProxy.setValue(
+      THREE.VRM.BlendShapePresetName.Blink,
+      Math.sin(t * 3) > 0.97 ? 1 : 0
+    );
   }
-
-  // HAPPY
-  if (currentMood === "happy") {
-    chest.rotation.x = Math.sin(t * 2) * 0.1;
-    lArm.rotation.z = -0.6;
-    rArm.rotation.z = 0.6;
-  }
-
-  // SHY
-  if (currentMood === "shy") {
-    head.rotation.x = 0.25;
-    head.rotation.y = Math.sin(t) * 0.15;
-    lArm.rotation.z = -0.3;
-    rArm.rotation.z = 0.3;
-  }
-
-  // ANGRY
-  if (currentMood === "angry") {
-    spine.rotation.x = -0.15;
-    lArm.rotation.x = -0.6;
-    rArm.rotation.x = -0.6;
-  }
-
-  // SAD
-  if (currentMood === "sad") {
-    head.rotation.x = 0.35;
-    chest.rotation.x = -0.1;
-  }
-
-  // 👀 blinking
-  vrm.expressionManager.setValue(
-    "blink",
-    Math.sin(t * 3) > 0.97 ? 1 : 0
-  );
 
   renderer.render(scene, camera);
 }
 
-window.addEventListener("load", initVRM);
+window.onload = initVRM;
 
-/* ===== MIC PLACEHOLDER ===== */
-document.getElementById("mic-btn").onclick = () => {
-  append("waifu", "*giggles* voice soon~");
+/* ================= SETTINGS ================= */
+const settingsBtn = document.getElementById("settings-btn");
+const settingsPanel = document.getElementById("settings-panel");
+const closeSettings = document.getElementById("close-settings");
+
+settingsBtn.onclick = () => {
+  settingsPanel.classList.toggle("hidden");
 };
 
-/* ===== GREETING ===== */
-append("waifu", "*smiles softly* Hi… I’m here 💗");
+closeSettings.onclick = () => {
+  settingsPanel.classList.add("hidden");
+};
