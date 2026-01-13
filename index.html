@@ -9,31 +9,24 @@
 <body>
 
 <div id="waifu-app">
+  <h1>Dream Waifu</h1>
 
-    <h1>Dream Waifu</h1>
+  <div id="avatar-box">
+    <canvas id="vrm-canvas"></canvas>
+  </div>
 
-    <!-- VRM Avatar -->
-    <div id="avatar-box">
-        <canvas id="vrm-canvas"></canvas>
-    </div>
+  <div id="chat-container">
+    <div id="chat"></div>
+  </div>
 
-    <!-- Chat -->
-    <div id="chat-container">
-        <div id="chat"></div>
-    </div>
-
-    <!-- Input -->
-    <div id="input-area">
-        <input id="msg" type="text" placeholder="Talk to her..." autocomplete="off">
-        <button id="send-btn">Send</button>
-        <button id="mic-btn">🎤</button>
-    </div>
-
+  <div id="input-area">
+    <input id="msg" type="text" placeholder="Talk to her..." />
+    <button id="send-btn">Send</button>
+  </div>
 </div>
-<!-- Settings Button -->
+
 <div id="settings-btn">⚙️</div>
 
-<!-- Settings Panel -->
 <div id="settings-panel" class="hidden">
   <h3>Settings</h3>
 
