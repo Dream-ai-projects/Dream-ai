@@ -49,47 +49,32 @@ window.addEventListener("DOMContentLoaded", () => {
 
       const data = await res.json();
       const reply = data.reply || "...";
-
       typing.innerHTML = `<b>Waifu:</b> ${reply}`;
 
       if (memoryEnabled) {
         history.push({ role: "assistant", content: reply });
       }
-    } catch (err) {
+    } catch {
       typing.innerHTML = "<b>Waifu:</b> connection error 😿";
-      console.error(err);
     }
   }
 
   sendBtn.onclick = sendMsg;
-  input.onkeydown = e => {
-    if (e.key === "Enter") sendMsg();
-  };
+  input.onkeydown = e => { if (e.key === "Enter") sendMsg(); };
 
-  /* ===== SETTINGS ===== */
+  // Settings
   const settingsBtn = document.getElementById("settings-btn");
   const settingsPanel = document.getElementById("settings-panel");
   const closeSettings = document.getElementById("close-settings");
   const personalitySelect = document.getElementById("personality-select");
   const memoryToggle = document.getElementById("memory-toggle");
 
-  settingsBtn.onclick = () => {
-    settingsPanel.classList.toggle("hidden");
-  };
+  settingsBtn.onclick = () => settingsPanel.classList.toggle("hidden");
+  closeSettings.onclick = () => settingsPanel.classList.add("hidden");
+  personalitySelect.onchange = e => personality = e.target.value;
+  memoryToggle.onchange = e => memoryEnabled = e.target.checked;
 
-  closeSettings.onclick = () => {
-    settingsPanel.classList.add("hidden");
-  };
-
-  personalitySelect.onchange = e => {
-    personality = e.target.value;
-  };
-
-  memoryToggle.onchange = e => {
-    memoryEnabled = e.target.checked;
-  };
-
-  /* ===== INIT VRM ONCE ===== */
+  // Init VRM
   initVRM();
 });
 
@@ -100,104 +85,78 @@ const clock = new THREE.Clock();
 function initVRM() {
   const canvas = document.getElementById("vrm-canvas");
 
+  // Scene
   scene = new THREE.Scene();
 
-  const rect = canvas.getBoundingClientRect();
-  camera = new THREE.PerspectiveCamera(
-    30,
-    rect.width / rect.height,
-    0.1,
-    100
-  );
-
+  // Camera
+  camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
   camera.position.set(0, 1.6, 3);
-  camera.lookAt(0, 1.4, 0);
 
-  renderer = new THREE.WebGLRenderer({
-    canvas,
-    alpha: true,
-    antialias: true
-  });
-
+  // Renderer
+  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000, 0);
 
+  // Lights
   scene.add(new THREE.AmbientLight(0xffffff, 1));
   const light = new THREE.DirectionalLight(0xffffff, 1.2);
   light.position.set(1, 2, 3);
   scene.add(light);
 
-  resize();
-  window.addEventListener("resize", resize);
-
+  // Load VRM
   const loader = new THREE.GLTFLoader();
   loader.crossOrigin = "anonymous";
-
   loader.load(
     "./oni.vrm",
     gltf => {
-      THREE.VRM.from(gltf)
-        .then(v => {
-          vrm = v;
+      THREE.VRM.from(gltf).then(v => {
+        vrm = v;
 
-          vrm.scene.traverse(obj => {
-            obj.frustumCulled = false;
-          });
-
-          vrm.scene.position.set(0, 0, 0);
-          vrm.scene.rotation.y = Math.PI;
-
-          scene.add(vrm.scene);
-          resize();
-        })
-        .catch(err => {
-          console.error("❌ VRM PARSE FAILED", err);
-        });
+        // Always render model even if humanoid missing
+        vrm.scene.traverse(obj => { obj.frustumCulled = false; });
+        vrm.scene.position.set(0, 0, 0);
+        vrm.scene.rotation.y = Math.PI;
+        vrm.scene.scale.set(1,1,1);
+        scene.add(vrm.scene);
+      }).catch(() => {
+        // If VRM parse fails, just add raw gltf.scene
+        scene.add(gltf.scene);
+      });
     },
     undefined,
-    err => {
-      console.error("❌ VRM LOAD ERROR", err);
+    () => {
+      // fallback: empty scene
     }
   );
 
-  animate();
-}
-
-function resize() {
-  if (!renderer || !camera) return;
-
-  const canvas = renderer.domElement;
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
-
-  if (w === 0 || h === 0) return;
-
-  renderer.setSize(w, h, false);
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
-}
-
-function animate() {
-  requestAnimationFrame(animate);
-
-  const delta = clock.getDelta();
-  const t = clock.elapsedTime;
-
-  if (vrm) {
-    vrm.update(delta);
-
-    const head = vrm.humanoid.getBoneNode("head");
-    if (head) {
-      head.rotation.y = Math.sin(t * 0.6) * 0.05;
-    }
-
-    if (vrm.blendShapeProxy) {
-      vrm.blendShapeProxy.setValue(
-        THREE.VRM.BlendShapePresetName.Blink,
-        Math.sin(t * 3) > 0.98 ? 1 : 0
-      );
-    }
+  // Resize for mobile
+  function resize() {
+    if (!renderer || !camera) return;
+    const parent = canvas.parentElement;
+    const w = parent.clientWidth;
+    const h = parent.clientHeight;
+    if (w === 0 || h === 0) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
   }
 
-  renderer.render(scene, camera);
+  window.addEventListener("resize", resize);
+  resize();
+
+  // Animate
+  function animate() {
+    requestAnimationFrame(animate);
+    const delta = clock.getDelta();
+    const t = clock.elapsedTime;
+
+    if (vrm && vrm.humanoid) vrm.update(delta);
+
+    // slow rotation so you can see model
+    if (vrm && vrm.scene) vrm.scene.rotation.y += 0.003;
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
 }
