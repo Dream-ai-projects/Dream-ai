@@ -1,5 +1,5 @@
 /* ================= STATE ================= */
-const BACKEND_URL = "https://dream-ai-backend-kkkk.onrender.com"; 
+const BACKEND_URL = "https://dream-ai-backend-kkkk.onrender.com/chat"; 
 let history = [];
 let personality = "girlfriend";
 let memoryEnabled = true;
