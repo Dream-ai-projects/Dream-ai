@@ -3,95 +3,104 @@ let history = JSON.parse(localStorage.getItem("memory")) || [];
 let affection = parseInt(localStorage.getItem("affection")) || 50;
 let currentMood = "neutral";
 let isTalking = false;
+
 let vrm, scene, camera, renderer, clock = new THREE.Clock();
 let bones = {};
 const mouse = new THREE.Vector2();
 
-/* ================= 3D CORE ================= */
 async function init() {
+    console.log("🚀 Initializing 3D Engine...");
     const canvas = document.getElementById("vrm-canvas");
-    scene = new THREE.Scene();
     
-    // CAMERA: Adjusted to see more of her body (Full View)
-    camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 20);
-    camera.position.set(0, 1.2, 2.8); 
+    scene = new THREE.Scene();
+
+    // Full Body Camera Setup
+    camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 1.2, 3.0); // Moved back for full body
 
     renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
 
     const light = new THREE.DirectionalLight(0xffffff, 1.0);
-    light.position.set(1, 1, 1).normalize();
-    scene.add(light, new THREE.AmbientLight(0xffffff, 0.6));
+    light.position.set(1, 1, 1);
+    scene.add(light, new THREE.AmbientLight(0xffffff, 0.7));
 
+    console.log("📦 Loading VRM: oni.vrm");
     const loader = new THREE.GLTFLoader();
-    loader.load("./oni.vrm", (gltf) => {
-        THREE.VRM.from(gltf).then((v) => {
-            vrm = v;
-            scene.add(vrm.scene);
-            vrm.scene.rotation.y = Math.PI;
+    
+    loader.load(
+        "./oni.vrm", // Ensure the file is named EXACTLY this in your GitHub repo
+        (gltf) => {
+            THREE.VRM.from(gltf).then((v) => {
+                vrm = v;
+                scene.add(vrm.scene);
+                vrm.scene.rotation.y = Math.PI; // Face the camera
+                
+                console.log("✅ VRM Loaded Successfully!", vrm);
 
-            // Setup Bones
-            bones.head = vrm.humanoid.getBoneNode("head");
-            bones.spine = vrm.humanoid.getBoneNode("spine");
-            bones.lArm = vrm.humanoid.getBoneNode("leftUpperArm");
-            bones.rArm = vrm.humanoid.getBoneNode("rightUpperArm");
-            
-            // Initial Arm Fix (No T-Pose)
-            bones.lArm.rotation.z = 1.3;
-            bones.rArm.rotation.z = -1.3;
-        });
-    });
+                // Map bones
+                bones.head = vrm.humanoid.getBoneNode("head");
+                bones.spine = vrm.humanoid.getBoneNode("spine");
+                bones.lArm = vrm.humanoid.getBoneNode("leftUpperArm");
+                bones.rArm = vrm.humanoid.getBoneNode("rightUpperArm");
+                
+                // Relax arms
+                if(bones.lArm) bones.lArm.rotation.z = 1.2;
+                if(bones.rArm) bones.rArm.rotation.z = -1.2;
+            });
+        },
+        (progress) => console.log(`Loading: ${Math.round((progress.loaded / progress.total) * 100)}%`),
+        (error) => console.error("❌ VRM LOAD ERROR:", error)
+    );
 
     window.addEventListener("mousemove", (e) => {
         mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
     });
 
+    window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
     animate();
 }
 
-/* ================= PHYSICS & ANIMATION ================= */
 function animate() {
     requestAnimationFrame(animate);
     const delta = clock.getDelta();
     const t = clock.getElapsedTime();
 
     if (vrm) {
-        // 1. Update Jiggle Physics (Spring Bones)
         vrm.update(delta);
 
-        // 2. Wind Physics (Subtle hair/clothing sway)
+        // 1. Wind & Jiggle
         const wind = Math.sin(t * 0.5) * 0.02;
-        vrm.springBoneManager.springBodies.forEach(s => {
-            s.externalForce.set(wind, 0, 0);
-        });
+        vrm.springBoneManager.springBodies.forEach(s => s.externalForce.set(wind, 0, 0));
 
-        // 3. Eye/Head Tracking (Follow Mouse)
+        // 2. Eye Tracking
         if (bones.head) {
-            const target = new THREE.Vector3(mouse.x, mouse.y + 1.2, 2);
-            bones.head.lookAt(target);
+            const lookTarget = new THREE.Vector3(mouse.x * 2, mouse.y * 2 + 1.2, 5);
+            bones.head.lookAt(lookTarget);
         }
 
-        // 4. Lip Sync (Talking)
+        // 3. Lip Sync
         if (isTalking) {
-            vrm.blendShapeProxy.setValue("a", Math.abs(Math.sin(t * 12)) * 0.6);
+            vrm.blendShapeProxy.setValue("a", Math.abs(Math.sin(t * 12)) * 0.7);
         } else {
             vrm.blendShapeProxy.setValue("a", 0);
         }
 
-        // 5. Breathing (Faster when lewd)
-        const bSpeed = currentMood === "lewd" ? 2.5 : 1.5;
-        if(bones.spine) bones.spine.rotation.x = Math.sin(t * bSpeed) * 0.03;
-
-        // 6. Mood Expressions
-        vrm.blendShapeProxy.setValue("joy", currentMood === "lewd" || currentMood === "happy" ? 1 : 0);
+        // 4. Expression
+        vrm.blendShapeProxy.setValue("joy", currentMood === "lewd" ? 1 : 0);
         vrm.blendShapeProxy.setValue("blink", Math.sin(t * 3) > 0.98 ? 1 : 0);
     }
     renderer.render(scene, camera);
 }
 
-/* ================= ACTIONS ================= */
+// UI HANDLERS
 async function handleChat() {
     const input = document.getElementById("msg");
     const text = input.value.trim();
@@ -110,35 +119,28 @@ async function handleChat() {
         const data = await res.json();
 
         currentMood = data.mood;
-        if(currentMood === "lewd") {
-            document.getElementById("blush-overlay").classList.add("lewd-glow");
-            updateAffection(2);
-        }
+        if(currentMood === "lewd") document.getElementById("blush-overlay").classList.add("lewd-glow");
 
         appendChat("waifu", data.reply);
         speak(data.reply);
         history.push({ role: "assistant", content: data.reply });
         localStorage.setItem("memory", JSON.stringify(history.slice(-30)));
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error("Backend Error:", e);
+        appendChat("waifu", "I'm having trouble thinking... is the backend live?");
+    }
 }
 
 function speak(text) {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.pitch = 1.4; // Anime High Pitch
-    u.rate = 1.0;
+    u.pitch = 1.4; 
     u.onstart = () => isTalking = true;
     u.onend = () => {
         isTalking = false;
-        setTimeout(() => document.getElementById("blush-overlay").classList.remove("lewd-glow"), 2000);
+        setTimeout(() => document.getElementById("blush-overlay").classList.remove("lewd-glow"), 3000);
     };
     window.speechSynthesis.speak(u);
-}
-
-function updateAffection(v) {
-    affection = Math.min(100, affection + v);
-    document.getElementById("affection-fill").style.width = affection + "%";
-    localStorage.setItem("affection", affection);
 }
 
 function appendChat(role, text) {
@@ -150,21 +152,21 @@ function appendChat(role, text) {
     chat.scrollTop = chat.scrollHeight;
 }
 
-/* ================= TOUCH REACTIONS ================= */
+function updateAffection(v) {
+    affection = Math.min(100, affection + v);
+    document.getElementById("affection-fill").style.width = affection + "%";
+    localStorage.setItem("affection", affection);
+}
+
+// Touch Interaction
 window.addEventListener("mousedown", () => {
     if(!vrm) return;
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(vrm.scene.children, true);
-
-    if(intersects.length > 0) {
-        currentMood = "lewd";
-        document.getElementById("blush-overlay").classList.add("lewd-glow");
-        const r = "M-master... you're touching me so suddenly... *moans softly*";
-        appendChat("waifu", r);
-        speak(r);
-        updateAffection(1);
-    }
+    currentMood = "lewd";
+    document.getElementById("blush-overlay").classList.add("lewd-glow");
+    const r = "D-don't just touch me like that... *blushes*";
+    appendChat("waifu", r);
+    speak(r);
+    updateAffection(1);
 });
 
 init();
