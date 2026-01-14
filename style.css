@@ -1,157 +1,54 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: system-ui, sans-serif;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body { background: #080808; overflow: hidden; height: 100vh; width: 100vw; }
 
-body {
-  background: linear-gradient(135deg, #f8d7ff, #d7ecff);
-  display: flex;
-  justify-content: center;
-  padding-top: 20px;
-  min-height: 100vh;
-}
-
-#waifu-app {
-  width: 95%;
-  max-width: 480px;
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(14px);
-  border-radius: 20px;
-  padding: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: relative;
-  z-index: 10;
-}
-
-h1 {
-  text-align: center;
-  color: #ff4fa3;
-}
-
-/* AVATAR */
 #avatar-box {
-  width: 100%;
-  height: 420px; /* Kept the larger height you added later */
-  border-radius: 18px;
-  overflow: hidden;
-  background: #eee;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
 }
 
-#vrm-canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-  pointer-events: none; /* Allows clicking through canvas if needed */
+#vrm-canvas { width: 100%; height: 100%; display: block; }
+
+/* Blush Effect Overlay */
+#blush-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 5;
+    box-shadow: inset 0 0 0px rgba(255, 0, 100, 0);
+    transition: box-shadow 0.6s ease;
+}
+.lewd-glow { box-shadow: inset 0 0 200px rgba(255, 0, 100, 0.4) !important; }
+
+/* UI Layer */
+#waifu-app {
+    position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+    width: 95%; max-width: 600px; z-index: 10;
 }
 
-/* CHAT */
+#affection-container {
+    position: fixed; top: 20px; left: 20px; width: 150px; height: 8px;
+    background: rgba(255,255,255,0.1); border-radius: 4px; z-index: 100;
+}
+#affection-fill {
+    width: 50%; height: 100%; background: #ff4fa3; border-radius: 4px;
+    box-shadow: 0 0 10px #ff4fa3; transition: width 0.5s;
+}
+
 #chat-container {
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 16px;
-  padding: 10px;
-  height: 260px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(12px);
+    border-radius: 20px; padding: 15px; height: 160px; overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1); color: white; margin-bottom: 12px;
 }
 
-p.user {
-  align-self: flex-end;
-  background: #cdeeff;
-  padding: 8px 12px;
-  border-radius: 14px;
-  max-width: 80%;
+#input-area { display: flex; gap: 10px; }
+#msg { 
+    flex: 1; padding: 15px; border-radius: 30px; border: none; 
+    background: rgba(255,255,255,0.1); color: white; outline: none;
 }
-
-p.waifu {
-  align-self: flex-start;
-  background: #ffd6e8;
-  padding: 8px 12px;
-  border-radius: 14px;
-  max-width: 80%;
-}
-
-/* INPUT */
-#input-area {
-  display: flex;
-  gap: 6px;
-}
-
-#msg {
-  flex: 1;
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid #ccc;
-  font-size: 16px;
-}
-
 #send-btn {
-  padding: 10px 14px;
-  border: none;
-  border-radius: 12px;
-  background: #ff6fb1;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
+    background: #ff4fa3; border: none; width: 50px; height: 50px;
+    border-radius: 50%; color: white; cursor: pointer; font-size: 20px;
 }
 
-/* SETTINGS */
-#settings-btn {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  font-size: 22px;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  padding: 8px 10px;
-  border-radius: 50%;
-  z-index: 1000;
-  cursor: pointer;
-}
-
-#settings-panel {
-  position: fixed;
-  top: 60px;
-  right: 12px;
-  width: 220px;
-  background: #111;
-  color: white;
-  padding: 12px;
-  border-radius: 10px;
-  z-index: 999;
-}
-
-#settings-panel h3 {
-  margin: 0 0 10px;
-  font-size: 16px;
-}
-
-.setting-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-#settings-panel button {
-  width: 100%;
-  padding: 6px;
-  background: #444;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.hidden {
-  display: none;
-}
+p.user { color: #00d2ff; margin-bottom: 5px; }
+p.waifu { color: #ff85c1; margin-bottom: 10px; font-weight: 500; }
