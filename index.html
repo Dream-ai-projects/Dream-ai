@@ -2,13 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dream Waifu - Full Body</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dream Waifu - Mobile God Mode</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="debug-log">Status: Initializing...</div>
+
     <div id="blush-overlay"></div>
-    <div id="affection-container"><div id="affection-fill"></div></div>
+    
+    <div id="settings-menu" class="hidden">
+        <h3>Settings</h3>
+        <label>Personality:</label>
+        <select id="pers-select">
+            <option value="horny">🔥 Horny/NSFW</option>
+            <option value="girlfriend">💖 Girlfriend</option>
+        </select>
+        <button onclick="clearMemory()" style="background:red">Wipe Memory</button>
+        <button onclick="toggleSettings()">Close</button>
+    </div>
 
     <div id="avatar-box">
         <canvas id="vrm-canvas"></canvas>
@@ -17,8 +29,9 @@
     <div id="waifu-app">
         <div id="chat-container"></div>
         <div id="input-area">
-            <input id="msg" type="text" placeholder="Talk to your waifu...">
-            <button id="send-btn">💖</button>
+            <button id="set-btn" onclick="toggleSettings()">⚙️</button>
+            <input id="msg" type="text" placeholder="Talk to her...">
+            <button id="send-btn">💋</button>
         </div>
     </div>
 
